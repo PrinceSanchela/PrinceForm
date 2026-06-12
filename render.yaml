@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: prince-form-builder
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGODB_URL
+        sync: false # Render will prompt you to paste your MongoDB Atlas connection string on setup
+      - key: DATABASE_NAME
+        value: prince_form_db
+      - key: ENV
+        value: production
+      - key: ALLOWED_ORIGINS
+        value: "*" # Replace this with your custom Render domain (e.g. https://prince-form.onrender.com) once created
