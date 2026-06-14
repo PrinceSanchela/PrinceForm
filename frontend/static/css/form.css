@@ -1,0 +1,782 @@
+/* =========================================================================
+   Prince Form Builder - Live Form View Styles
+   ========================================================================= */
+
+:root {
+    --theme-color: #6366f1;
+    --bg-color: #f8fafc;
+    --text-color: #0f172a;
+    --button-color: #6366f1;
+    --font-family: 'Inter', sans-serif;
+    --form-max-width: 660px;
+    
+    --border-radius-lg: 20px;
+    --border-radius-md: 14px;
+    --border-radius-sm: 10px;
+    --border-color: rgba(226, 232, 240, 0.8);
+    
+    --shadow-sm: 0 4px 12px -2px rgba(15, 23, 42, 0.04), 0 2px 4px -1px rgba(15, 23, 42, 0.02);
+    --shadow-md: 0 12px 24px -6px rgba(15, 23, 42, 0.06), 0 4px 12px -2px rgba(15, 23, 42, 0.02);
+    --shadow-lg: 0 24px 38px -12px rgba(15, 23, 42, 0.1), 0 8px 16px -4px rgba(15, 23, 42, 0.04);
+    
+    --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.branded-body {
+    background-color: var(--bg-color);
+    /* Soft premium background gradient */
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.04) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.04) 0px, transparent 50%);
+    font-family: var(--font-family), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text-color);
+    padding: 16px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.form-wrapper {
+    width: 100%;
+    max-width: var(--form-max-width);
+    margin: 32px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Banner Styling */
+.form-banner-img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+    margin-bottom: -20px; /* Seamless connection with card */
+    box-shadow: var(--shadow-sm);
+    display: block;
+}
+
+/* Logo Image */
+.form-logo-img {
+    max-height: 60px;
+    max-width: 180px;
+    object-fit: contain;
+    margin-bottom: 12px;
+    align-self: flex-start;
+}
+
+/* Base Card structure */
+.form-card-base {
+    background-color: #ffffff;
+    border-radius: var(--border-radius-sm);
+    padding: 28px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Custom Card Options */
+.card-style-elevated {
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-md);
+}
+
+.card-style-flat {
+    border-radius: 6px;
+    box-shadow: none;
+    border-color: var(--border-color);
+}
+
+.card-style-glass {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--border-radius-lg);
+}
+
+/* Dynamic Top Border Theme Indicator */
+.form-header-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background-color: var(--theme-color);
+}
+
+/* Connect card cleanly with banner when present */
+.has-banner .form-header-card {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-top: none;
+}
+
+.form-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text-color);
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
+}
+
+.form-description {
+    font-size: 0.95rem;
+    color: var(--text-color-secondary);
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+.required-badge {
+    color: var(--error-color);
+    margin-left: 3px;
+    font-weight: bold;
+}
+
+/* Question Cards container */
+.question-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Active Border Focus highlighting on side of card */
+.question-card.active-input {
+    border-left: 4px solid var(--theme-color);
+}
+
+.question-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* Response Input Fields styling */
+.branded-input {
+    width: 100%;
+    padding: 10px 0;
+    border: none;
+    border-bottom: 2px solid var(--border-color);
+    outline: none;
+    font-family: inherit;
+    font-size: 1rem;
+    background: transparent;
+    color: var(--text-color);
+    transition: all var(--transition-fast);
+}
+
+.branded-input:focus {
+    border-bottom-color: var(--theme-color);
+    padding-left: 4px;
+}
+
+.branded-input-box {
+    width: 100%;
+    padding: 11px 16px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    outline: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background: #ffffff;
+    color: var(--text-color);
+    transition: all var(--transition-fast);
+}
+
+.branded-input-box:focus {
+    border-color: var(--theme-color);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+}
+
+/* Radio & Checkbox styling */
+.choices-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.choice-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    position: relative;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: background-color var(--transition-fast);
+    user-select: none;
+}
+
+.choice-option:hover {
+    background-color: rgba(99, 102, 241, 0.04);
+}
+
+.choice-input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    outline: none;
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+    transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.choice-input[type="checkbox"] {
+    border-radius: 5px;
+}
+
+.choice-input::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    transform: scale(0);
+    transition: 120ms transform ease-in-out;
+    box-shadow: inset 1em 1em var(--theme-color);
+}
+
+.choice-input[type="radio"]::before {
+    border-radius: 50%;
+}
+
+.choice-input[type="checkbox"]::before {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+}
+
+.choice-input:checked {
+    border-color: var(--theme-color);
+}
+
+.choice-input:checked::before {
+    transform: scale(1);
+}
+
+/* Select Dropdown styling */
+.branded-select {
+    width: 100%;
+    max-width: 280px;
+    padding: 11px 16px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    color: var(--text-color);
+    outline: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.branded-select:focus {
+    border-color: var(--theme-color);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+}
+
+/* Date input */
+.branded-date {
+    width: 100%;
+    max-width: 220px;
+    padding: 11px 16px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all var(--transition-fast);
+}
+
+.branded-date:focus {
+    border-color: var(--theme-color);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+}
+
+/* Submit row styling */
+.form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+}
+
+.branded-submit-btn {
+    background-color: var(--button-color);
+    color: #ffffff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: var(--border-radius-sm);
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    transition: all var(--transition-fast);
+}
+
+.branded-submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+}
+
+.branded-submit-btn:active {
+    transform: translateY(0);
+}
+
+.form-clear-btn {
+    color: var(--text-color-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all var(--transition-fast);
+}
+
+.form-clear-btn:hover {
+    background-color: rgba(15, 23, 42, 0.04);
+    color: var(--text-color-primary);
+}
+
+/* Success Card styling */
+.success-card {
+    text-align: center;
+    padding: 48px 28px;
+}
+
+.success-icon {
+    font-size: 4.5rem;
+    color: var(--success-color);
+    margin-bottom: 20px;
+    display: inline-block;
+    animation: pulseBorder 1.5s infinite;
+    border-radius: 50%;
+}
+
+/* Premium Animated SVG Celebration Icons */
+.success-svg {
+    width: 40px;
+    height: 40px;
+    stroke: currentColor;
+    stroke-width: 4px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    display: block;
+}
+
+.success-svg-circle {
+    stroke-dasharray: 150;
+    stroke-dashoffset: 150;
+    animation: drawCircle 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.success-svg-check {
+    stroke-dasharray: 60;
+    stroke-dashoffset: 60;
+    animation: drawCheck 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards;
+}
+
+@keyframes drawCircle {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes drawCheck {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* Success layout styles */
+.success-layout-classic .success-icon-container {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: rgba(99, 102, 241, 0.08); /* Soft primary tint */
+    border: 2px solid var(--theme-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.15);
+    color: var(--theme-color);
+    animation: successIconEnter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.success-icon-container-minimal {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--theme-color);
+    margin-bottom: 12px;
+    animation: successIconEnter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Immersive Vibrant Gradient Splash Success Page layout */
+.success-layout-splash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, var(--theme-color) 0%, var(--button-color) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    color: #ffffff;
+    padding: 24px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    animation: splashEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Background floating decorative circles in splash layout */
+.splash-bg-shapes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.splash-bg-shapes .shape-1 {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 40%;
+    height: 40%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.splash-bg-shapes .shape-2 {
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 50%;
+    height: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.success-icon-container-splash {
+    animation: successIconEnter 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    z-index: 2;
+}
+
+.success-layout-splash h2 {
+    z-index: 2;
+    animation: textSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.success-layout-splash p {
+    z-index: 2;
+    animation: textSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+.splash-actions {
+    width: 100%;
+    max-width: 320px;
+    z-index: 2;
+    animation: textSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+.splash-footer {
+    animation: fadeIn 0.8s ease 0.5s both;
+}
+
+/* Animation keyframes */
+@keyframes successIconEnter {
+    from {
+        opacity: 0;
+        transform: scale(0.6) rotate(-15deg);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+@keyframes textSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes splashEnter {
+    from {
+        opacity: 0;
+        transform: scale(1.05);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.branding-credit {
+    font-size: 0.8rem;
+    color: var(--text-color-muted);
+    text-align: center;
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+}
+
+.branding-credit a {
+    color: var(--theme-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* Advanced Success Features micro-animations */
+.success-steps-container {
+    animation: textSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both;
+}
+
+.social-share-container a {
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.social-share-container a:hover {
+    transform: translateY(-3px) scale(1.12);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+
+.success-layout-splash .social-share-container a:hover {
+    background: #ffffff !important;
+    color: var(--theme-color) !important;
+}
+
+.splash-actions a, .splash-actions button {
+    animation: textSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+/* Premium Social Share Buttons */
+.social-share-btn-wrap {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.share-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff !important;
+    text-decoration: none;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.share-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    display: block;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.share-btn:hover svg {
+    transform: scale(1.15);
+}
+
+.share-btn-whatsapp {
+    background: #25d366;
+}
+
+.share-btn-instagram {
+    background: #e1306c;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.share-btn-instagram::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+    z-index: -1;
+    transition: opacity 0.3s ease;
+}
+
+.share-btn-twitter {
+    background: #000000;
+}
+
+.share-btn-linkedin {
+    background: #0077b5;
+}
+
+/* Hover effects with brand shadows */
+.share-btn:hover {
+    transform: translateY(-4px) scale(1.15);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.share-btn-whatsapp:hover {
+    box-shadow: 0 8px 20px rgba(37, 211, 102, 0.45);
+}
+
+.share-btn-instagram:hover {
+    box-shadow: 0 8px 20px rgba(225, 48, 108, 0.5);
+}
+
+.share-btn-twitter:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.share-btn-linkedin:hover {
+    box-shadow: 0 8px 20px rgba(0, 119, 181, 0.45);
+}
+
+/* Splash layout overrides */
+.success-layout-splash .share-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: none;
+    color: #ffffff !important;
+}
+
+.success-layout-splash .share-btn:hover {
+    background: #ffffff !important;
+    border-color: #ffffff;
+}
+
+.success-layout-splash .share-btn-whatsapp:hover {
+    color: #25d366 !important;
+    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.3);
+}
+
+.success-layout-splash .share-btn-instagram:hover {
+    color: #e1306c !important;
+    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.3);
+}
+
+.success-layout-splash .share-btn-twitter:hover {
+    color: #000000 !important;
+    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.3);
+}
+
+.success-layout-splash .share-btn-linkedin:hover {
+    color: #0077b5 !important;
+    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.3);
+}
+
+/* Links styles inside descriptions for responder form */
+.form-description a,
+.success-card p a,
+.success-layout-minimal p a {
+    color: var(--theme-color);
+    text-decoration: underline;
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+
+.form-description a:hover,
+.success-card p a:hover,
+.success-layout-minimal p a:hover {
+    opacity: 0.8;
+}
+
+.success-layout-splash p a {
+    color: #ffffff;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+
+.success-layout-splash p a:hover {
+    opacity: 0.8;
+}
+
+/* Floating Brand Watermark Badge */
+.brand-watermark-badge {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 8px 16px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03);
+    font-family: 'Outfit', 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: default;
+    user-select: none;
+}
+
+.brand-watermark-badge a {
+    text-decoration: none;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: filter 0.2s;
+}
+
+.brand-watermark-badge a:hover {
+    filter: brightness(1.1);
+}
+
+.brand-watermark-badge:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.25), 0 2px 8px rgba(99, 102, 241, 0.15);
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(99, 102, 241, 0.35);
+}
