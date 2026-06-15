@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prince Form | Workspace Dashboard</title>
+    <!-- Base Stylesheet references -->
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link rel="stylesheet" href="/static/css/form.css">
+</head>
+<body>
+    <!-- Ultra-Premium Glowing Aura Background Blobs -->
+    <div class="aura-container">
+        <div class="aura-blob aura-blob-1"></div>
+        <div class="aura-blob aura-blob-2"></div>
+        <div class="aura-blob aura-blob-3"></div>
+    </div>
+
+    <div class="dashboard-container">
+        
+        <!-- Header -->
+        <header class="dashboard-header animate-fade-in">
+            <div class="logo-container">
+                <span class="logo-text gradient-text">Prince Form</span>
+                <span class="brand-badge">Builder</span>
+            </div>
+            
+            <nav class="tabs-nav">
+                <button class="tab-btn active" data-tab="forms">My Forms</button>
+                <button class="tab-btn" data-tab="builder">Form Builder</button>
+                <button class="tab-btn" data-tab="responses">Responses</button>
+            </nav>
+
+            <div class="user-profile-section" style="display: flex; align-items: center; gap: 12px;">
+                <span class="username-text" style="font-family: 'Outfit', sans-serif; font-size: 0.95rem; color: var(--text-color-primary); font-weight: 500;">Hello, <strong style="color: var(--primary-color);">{{ username }}</strong></span>
+                <button id="btn-logout" class="btn btn-secondary" style="font-size: 0.85rem; padding: 6px 12px; margin: 0; min-height: unset; height: auto;">Logout</button>
+            </div>
+        </header>
+        
+        <!-- ================================================================= -->
+        <!-- VIEW 1: MY FORMS LIST -->
+        <!-- ================================================================= -->
+        <main id="forms-tab" class="tab-content active">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h2 class="gradient-text" style="font-family:'Outfit'; font-size:1.6rem; font-weight:800;">Your Personal Forms</h2>
+                <button id="btn-new-form" class="btn btn-primary">+ Create New Form</button>
+            </div>
+            
+            <div class="forms-grid" id="forms-grid-container">
+                <!-- Programmatically populated forms cards -->
+            </div>
+        </main>
+        
+        <!-- ================================================================= -->
+        <!-- VIEW 2: FORM BUILDER -->
+        <!-- ================================================================= -->
+        <main id="builder-tab" class="tab-content">
+            <div class="builder-layout">
+                
+                <!-- Left panel: Question Editor & Design Configurations -->
+                <section class="editor-panel">
+                    
+                    <div class="builder-section-title">
+                        <span class="gradient-text">Form Structure & Content</span>
+                        <div style="display:flex; gap:8px;">
+                            <button id="btn-share-builder" class="btn btn-secondary" style="font-size:0.85rem; padding:6px 12px; display:none;">Share</button>
+                            <button id="btn-save-form" class="btn btn-primary" style="font-size:0.85rem; padding:6px 16px;">Save Form Configuration</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Basic details -->
+                    <div class="form-group">
+                        <label class="form-label">Form Title</label>
+                        <input type="text" id="form-title-input" class="input-text" placeholder="Untitled Form">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <div class="editor-toolbar" data-target="form-desc-editor">
+                            <button type="button" class="editor-btn" data-command="bold" title="Bold"><b>B</b></button>
+                            <button type="button" class="editor-btn" data-command="italic" title="Italic"><i>I</i></button>
+                            <button type="button" class="editor-btn" data-command="underline" title="Underline"><u>U</u></button>
+                            <button type="button" class="editor-btn" data-command="insertUnorderedList" title="Bullet List">&#8226;&nbsp;List</button>
+                            <button type="button" class="editor-btn" data-command="createLink" title="Insert Link">🔗 Link</button>
+                            <button type="button" class="editor-btn" data-command="removeFormat" title="Clear Format">&times; Format</button>
+                        </div>
+                        <div id="form-desc-editor" class="rich-text-editor" contenteditable="true" placeholder="Form Description"></div>
+                    </div>
+                    
+                    <hr style="border:none; border-top:1px solid var(--border-color);">
+
+                    <!-- Advanced Settings -->
+                    <div class="branding-options">
+                        <div class="builder-section-title" style="font-size:1.05rem; border:none; padding:0;">Advanced Form Settings</div>
+                        
+                        <div class="form-group" style="flex-direction:row; align-items:center; justify-content:space-between; padding:4px 0;">
+                            <label class="form-label" style="cursor:pointer;" for="form-accepting-input">Accepting Responses</label>
+                            <input type="checkbox" id="form-accepting-input" checked style="width:20px; height:20px; cursor:pointer;">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Custom Submission Message</label>
+                            <input type="text" id="form-confirmation-input" class="input-text" placeholder="Your response has been recorded.">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Success Page Layout</label>
+                            <select id="form-success-layout-select" class="q-type-select" style="font-size:0.95rem;">
+                                <option value="classic">Classic Centered Card</option>
+                                <option value="minimal">Minimalist Clean Screen</option>
+                                <option value="splash">Vibrant Theme Gradient Splash</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Success Celebration Icon</label>
+                            <select id="form-success-icon-select" class="q-type-select" style="font-size:0.95rem;">
+                                <option value="checkmark">Animated Checkmark</option>
+                                <option value="star">Shining Star</option>
+                                <option value="heart">Beating Heart</option>
+                                <option value="thumbs_up">Thumbs Up</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" style="flex-direction:row; align-items:center; justify-content:space-between; padding:4px 0;">
+                            <label class="form-label" style="cursor:pointer;" for="form-submit-another-input">Show "Submit another response" Link</label>
+                            <input type="checkbox" id="form-submit-another-input" checked style="width:20px; height:20px; cursor:pointer;">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Detailed Success Description (Optional)</label>
+                            <div class="editor-toolbar" data-target="form-success-desc-editor">
+                                <button type="button" class="editor-btn" data-command="bold" title="Bold"><b>B</b></button>
+                                <button type="button" class="editor-btn" data-command="italic" title="Italic"><i>I</i></button>
+                                <button type="button" class="editor-btn" data-command="underline" title="Underline"><u>U</u></button>
+                                <button type="button" class="editor-btn" data-command="insertUnorderedList" title="Bullet List">&#8226;&nbsp;List</button>
+                                <button type="button" class="editor-btn" data-command="createLink" title="Insert Link">🔗 Link</button>
+                                <button type="button" class="editor-btn" data-command="removeFormat" title="Clear Format">&times; Format</button>
+                            </div>
+                            <div id="form-success-desc-editor" class="rich-text-editor" contenteditable="true" placeholder="Add detailed instructions, thank you notes, or next steps context..."></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                                <span>Call-to-Action Buttons</span>
+                                <button type="button" id="btn-add-success-btn" class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px; margin:0;">+ Add Button</button>
+                            </label>
+                            <div id="success-buttons-container" style="display:flex; flex-direction:column; gap:8px;">
+                                <!-- Populate buttons dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                                <span>Follow-up Instruction Steps</span>
+                                <button type="button" id="btn-add-success-step" class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px; margin:0;">+ Add Step</button>
+                            </label>
+                            <div id="success-steps-container" style="display:flex; flex-direction:column; gap:8px;">
+                                <!-- Populate steps dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="flex-direction:row; align-items:center; justify-content:space-between; padding:4px 0;">
+                            <label class="form-label" style="cursor:pointer;" for="form-social-share-input">Show Social Share Icons</label>
+                            <input type="checkbox" id="form-social-share-input" style="width:20px; height:20px; cursor:pointer;">
+                        </div>
+                    </div>
+                    
+                    <hr style="border:none; border-top:1px solid var(--border-color);">
+                    
+                    <!-- Theme & Custom Branding -->
+                    <div class="branding-options">
+                        <div class="builder-section-title" style="font-size:1.05rem; border:none; padding:0;">Custom Branding</div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Primary Color Theme</label>
+                            <div class="color-presets" id="theme-presets-container">
+                                <!-- Loaded dynamically -->
+                            </div>
+                            <input type="color" id="theme-color-input" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; margin-top:8px; border-radius:4px;">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Background Color</label>
+                            <input type="color" id="bg-color-input" value="#f0ebf8" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; border-radius:4px;">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Text Color</label>
+                            <input type="color" id="text-color-input" value="#202124" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; border-radius:4px;">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Submit Button Color</label>
+                            <input type="color" id="btn-color-input" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; border-radius:4px;">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Typography Style</label>
+                            <select id="font-select" class="q-type-select" style="font-size:0.95rem;">
+                                <option value="Inter">Inter (Clean / Neutral)</option>
+                                <option value="Outfit">Outfit (Modern / Friendly)</option>
+                                <option value="Roboto">Roboto (Google Classic)</option>
+                                <option value="Georgia">Georgia (Elegant Serif)</option>
+                                <option value="Courier New">Courier New (Monospace)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Card Corner Theme</label>
+                            <select id="card-style-select" class="q-type-select" style="font-size:0.95rem;">
+                                <option value="elevated">Elevated (Rounded + Shadow)</option>
+                                <option value="flat">Flat Minimal (Sharp Borders)</option>
+                                <option value="glass">Modern Glassmorphism (Blur + Transparency)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Custom Logo Image</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="logo-url-input" class="input-text" placeholder="https://example.com/logo.png" style="flex:1;">
+                                <label class="btn btn-secondary" style="font-size:0.8rem; padding:10px 14px; margin:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap;">
+                                    Upload
+                                    <input type="file" id="logo-file-input" accept="image/*" style="display:none;">
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Custom Header Banner</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="banner-url-input" class="input-text" placeholder="https://images.unsplash.com/photo-..." style="flex:1;">
+                                <label class="btn btn-secondary" style="font-size:0.8rem; padding:10px 14px; margin:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap;">
+                                    Upload
+                                    <input type="file" id="banner-file-input" accept="image/*" style="display:none;">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr style="border:none; border-top:1px solid var(--border-color);">
+                    
+                    <!-- Questions List Editor -->
+                    <div class="builder-section-title" style="font-size:1.05rem; border:none; padding:0;">Form Questions</div>
+                    <div class="questions-editor-list" id="questions-editor-list">
+                        <!-- Questions dynamically loaded -->
+                    </div>
+                    
+                    <button id="btn-add-question" class="btn btn-secondary" style="border-style:dashed;">+ Add Question Element</button>
+                </section>
+                
+                <!-- Right panel: Live Form Preview -->
+                <section class="preview-panel">
+                    <div style="font-family:'Outfit'; font-size:1.1rem; color:var(--text-color-secondary); margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <span>Live Dynamic Preview</span>
+                        <div class="preview-toggle-capsule">
+                            <button class="preview-toggle-btn active" id="preview-toggle-form" data-mode="form">Form View</button>
+                            <button class="preview-toggle-btn" id="preview-toggle-success" data-mode="success">Success View</button>
+                        </div>
+                    </div>
+                    <div id="preview-wrapper">
+                        <!-- Preview loaded here -->
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+        
+        <!-- ================================================================= -->
+        <!-- VIEW 3: RESPONSES & DATA ANALYTICS -->
+        <!-- ================================================================= -->
+        <main id="responses-tab" class="tab-content">
+            
+            <!-- Overall Stats Summary Cards -->
+            <div class="responses-summary">
+                <div class="stat-card animate-fade-in">
+                    <div class="stat-number" id="total-responses-count">0</div>
+                    <div class="stat-label">Total Submissions</div>
+                </div>
+            </div>
+            
+            <!-- Submissions Table -->
+            <section class="responses-container animate-fade-in">
+                <div class="section-actions">
+                    <h3 class="gradient-text" style="font-family:'Outfit'; font-size:1.3rem;">Individual Submissions Table</h3>
+                    <button id="btn-export-csv" class="btn btn-secondary">Export data as CSV</button>
+                </div>
+                <div class="table-wrapper">
+                    <table class="response-table">
+                        <thead>
+                            <tr id="table-header-row">
+                                <!-- Load Headers dynamically -->
+                            </tr>
+                        </thead>
+                        <tbody id="responses-table-body">
+                            <!-- Rows loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <!-- Submissions Visualized breakdown -->
+            <h3 class="gradient-text animate-fade-in" style="font-family:'Outfit'; font-size:1.3rem; margin-bottom:12px;">Submissions Analytical Breakdown</h3>
+            <section class="charts-grid" id="analytics-charts-container">
+                <!-- Custom charts rendered dynamically -->
+            </section>
+        </main>
+        
+        <!-- Footer Branding -->
+        <footer style="text-align: center; padding: 24px 0 12px; font-size: 0.85rem; color: var(--text-color-muted); border-top: 1px solid var(--border-color); margin-top: 40px;" class="animate-fade-in">
+            Made By <a href="https://prince-sanchela.vercel.app" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">Prince Sanchela</a> Custom Branded Forms
+        </footer>
+        
+    </div>
+
+    <!-- Share Form Modal Overlay -->
+    <div id="share-modal" class="modal-overlay" style="display:none;">
+        <div class="form-card-base card-style-elevated" style="width:100%; max-width:440px; padding:28px; text-align:center; position:relative; background:#ffffff; box-shadow:var(--shadow-lg);">
+            <button id="close-share-modal" style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:1.6rem; cursor:pointer; color:var(--text-color-secondary); transition:color 0.2s;" onmouseover="this.style.color='var(--text-color-primary)'" onmouseout="this.style.color='var(--text-color-secondary)'">&times;</button>
+            
+            <h3 style="font-family:'Outfit'; font-size:1.4rem; margin-bottom:8px; color:var(--text-color-primary);">Share Branded Form</h3>
+            <p style="font-size:0.85rem; color:var(--text-color-secondary); margin-bottom:20px; line-height:1.4;">Send this link to responders, or scan the QR Code below to open the form directly on mobile devices.</p>
+            
+            <!-- Share url input and copy button -->
+            <div style="display:flex; gap:8px; margin-bottom:24px;">
+                <input type="text" id="share-url-input" class="input-text" readonly style="font-size:0.85rem; background:#f3f4f6; color:var(--text-color-secondary); cursor:text;" onclick="this.select();">
+                <button id="btn-copy-url" class="btn btn-primary" style="padding:8px 16px; font-size:0.85rem; font-weight:600; white-space:nowrap;">Copy Link</button>
+            </div>
+            
+            <!-- Dynamic QR Code block -->
+            <div style="background:#f8f9fa; border:1px solid var(--border-color); border-radius:var(--border-radius-md); padding:20px; display:inline-flex; justify-content:center; align-items:center; margin-bottom:20px; box-shadow:var(--shadow-inset);">
+                <img id="share-qr-img" src="" alt="Form Responder QR Code" style="width:180px; height:180px; display:block; border-radius:4px;">
+            </div>
+            
+            <div style="font-size:0.8rem; color:var(--text-color-muted); border-top:1px solid #f1f3f4; padding-top:16px; margin-top:8px;">
+                Forms Designed & Handcrafted By <br>
+                <a href="https://prince-sanchela.vercel.app" target="_blank" style="color:var(--primary-color); font-weight:700; text-decoration:none;">Prince Sanchela</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Script code source -->
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

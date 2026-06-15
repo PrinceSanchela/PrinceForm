@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ form.title }} | Prince Form</title>
+    <!-- Base Stylesheet references -->
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="/static/css/form.css">
+    
+    <!-- Dynamic Google Font Import based on Branding configurations -->
+    {% if form.branding.fontFamily in ['Inter', 'Outfit', 'Roboto'] %}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ form.branding.fontFamily }}:wght@300;400;500;600;700&display=swap">
+    {% endif %}
+    
+    <!-- Inline variables overrides -->
+    <style>
+        :root {
+            --theme-color: {{ form.branding.themeColor }};
+            --bg-color: {{ form.branding.backgroundColor }};
+            --text-color: {{ form.branding.textColor }};
+            --button-color: {{ form.branding.buttonColor }};
+            --font-family: '{{ form.branding.fontFamily }}', sans-serif;
+        }
+    </style>
+</head>
+<body class="branded-body">
+
+    <div class="form-wrapper {{ 'has-banner' if form.branding.bannerUrl else '' }}" id="form-view-container" data-card-style="{{ form.branding.cardStyle }}">
+        
+        <!-- Render custom header banner image if exists -->
+        {% if form.branding.bannerUrl %}
+        <img src="{{ form.branding.bannerUrl }}" class="form-banner-img" alt="Form Banner Header">
+        {% endif %}
+        
+        {% if form.acceptingResponses != False %}
+        <!-- Form Content -->
+        <form id="responder-form-element">
+            <!-- Hidden context parameters -->
+            <input type="hidden" id="form-id-hidden" value="{{ form.id }}">
+            <input type="hidden" id="form-confirmation-hidden" value="{{ form.confirmationMessage or 'Your response has been recorded.' }}">
+            <input type="hidden" id="form-submit-another-hidden" value="{{ 'true' if form.showSubmitAnother != False else 'false' }}">
+            <input type="hidden" id="form-success-icon-hidden" value="{{ form.successIcon or 'checkmark' }}">
+            <input type="hidden" id="form-success-layout-hidden" value="{{ form.successLayout or 'classic' }}">
+            <div id="form-success-desc-html" style="display:none;">{{ (form.successDescription or '') | safe }}</div>
+            <input type="hidden" id="form-success-share-hidden" value="{{ 'true' if form.showSocialShare else 'false' }}">
+            
+            <script type="application/json" id="form-success-buttons-json">
+                {{ (form.successButtons or []) | tojson | safe }}
+            </script>
+            <script type="application/json" id="form-success-steps-json">
+                {{ (form.successSteps or []) | tojson | safe }}
+            </script>
+            
+            <div class="form-card-base card-style-{{ form.branding.cardStyle }} form-header-card animate-fade-in">
+                <!-- Custom logo image if exists -->
+                {% if form.branding.logoUrl %}
+                <img src="{{ form.branding.logoUrl }}" class="form-logo-img" alt="Form Branding Logo">
+                {% endif %}
+                
+                <h1 class="form-title">{{ form.title }}</h1>
+                <div class="form-description">{{ form.description | safe }}</div>
+            </div>
+            
+            <!-- Loop Questions -->
+            {% for q in form.questions %}
+            <div class="form-card-base card-style-{{ form.branding.cardStyle }} question-card animate-fade-in" 
+                 data-q-id="{{ q.id }}" 
+                 data-q-type="{{ q.type }}" 
+                 data-q-required="{{ 'true' if q.required else 'false' }}"
+                 data-q-val-type="{{ q.validationType or 'none' }}"
+                 data-q-val-pattern="{{ q.validationPattern or '' }}"
+                 data-q-val-error="{{ q.validationErrorText or '' }}"
+                 data-q-validations='{{ (q.validations or []) | tojson | safe }}'
+                 style="animation-delay: {{ loop.index * 0.05 }}s">
+                
+                <div class="question-label">
+                    {{ q.label }}
+                    {% if q.required %}
+                    <span class="required-badge" title="Required Question">*</span>
+                    {% endif %}
+                </div>
+                
+                <div style="margin-top:8px; width: 100%;">
+                    
+                    {% if q.type == "text" %}
+                    <input type="text" class="branded-input" placeholder="{{ q.placeholder or 'Your answer' }}">
+                    
+                    {% elif q.type == "paragraph" %}
+                    <textarea class="branded-input" placeholder="{{ q.placeholder or 'Your answer' }}" style="resize:vertical; min-height:80px;"></textarea>
+                    
+                    {% elif q.type == "number" %}
+                    <input type="number" class="branded-input-box" placeholder="{{ q.placeholder or 'Enter number response' }}">
+                    
+                    {% elif q.type == "date" %}
+                    <input type="date" class="branded-date">
+                    
+                    {% elif q.type == "select" %}
+                    <select class="branded-select">
+                        <option value="">Choose Option</option>
+                        {% for opt in q.options %}
+                        <option value="{{ opt }}">{{ opt }}</option>
+                        {% endfor %}
+                    </select>
+                    
+                    {% elif q.type == "radio" %}
+                    <div class="choices-container">
+                        {% for opt in q.options %}
+                        <label class="choice-option">
+                            <input type="radio" name="q_{{ q.id }}" value="{{ opt }}" class="choice-input">
+                            <span>{{ opt }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    
+                    {% elif q.type == "checkbox" %}
+                    <div class="choices-container">
+                        {% for opt in q.options %}
+                        <label class="choice-option">
+                            <input type="checkbox" name="q_{{ q.id }}_{{ loop.index }}" value="{{ opt }}" class="choice-input">
+                            <span>{{ opt }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Submission Controls -->
+            <div class="form-footer animate-fade-in" style="animation-delay: {{ (form.questions|length + 1) * 0.05 }}s">
+                <button type="submit" class="branded-submit-btn" id="btn-submit-form">Submit</button>
+                <button type="button" class="form-clear-btn" id="btn-clear-form">Clear Form</button>
+            </div>
+            
+        </form>
+        {% else %}
+        <!-- Inactive Form notice card -->
+        <div class="form-card-base card-style-{{ form.branding.cardStyle }} form-header-card animate-fade-in">
+            <!-- Custom logo image if exists -->
+            {% if form.branding.logoUrl %}
+            <img src="{{ form.branding.logoUrl }}" class="form-logo-img" alt="Form Branding Logo">
+            {% endif %}
+            
+            <h1 class="form-title">{{ form.title }}</h1>
+            <div class="form-description" style="margin-bottom: 24px;">{{ form.description }}</div>
+            
+            <hr style="border:none; border-top:1px solid var(--border-color); margin-bottom: 24px;">
+            
+            <div style="background-color: var(--primary-color-light); border-left: 4px solid var(--theme-color); padding: 16px; border-radius: var(--border-radius-sm);" class="animate-fade-in">
+                <h3 style="font-family:'Outfit'; font-size:1.15rem; color: var(--theme-color); margin-bottom:6px;">Form No Longer Active</h3>
+                <p style="color:var(--text-color-secondary); font-size:0.9rem;">
+                    This form is no longer accepting responses. If you believe this is in error, please contact the owner.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Branding Credit -->
+        <div class="branding-credit">
+            Made By <a href="https://prince-sanchela.vercel.app" target="_blank">Prince Sanchela</a> Custom Branded Forms
+        </div>
+        
+    </div>
+
+    <!-- Floating Brand Watermark Badge -->
+    <div class="brand-watermark-badge">Powered by <a href="/">Prince Form</a> ⚡</div>
+
+    <!-- Client validation script -->
+    <script src="/static/js/form.js"></script>
+</body>
+</html>
