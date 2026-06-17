@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prince Form Builder - Access Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-color-hover: #4f46e5;
+            --bg-color: #0b0f19;
+            --text-color: #f8fafc;
+            --text-secondary: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --error-color: #f43f5e;
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+            padding: 24px 16px;
+        }
+
+        /* Ambient Background Blobs Container */
+        .aura-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Ambient Drift Aura Blobs */
+        .aura-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            z-index: 1;
+            animation: drift 20s infinite alternate ease-in-out;
+        }
+
+        .aura-1 {
+            width: 400px;
+            height: 400px;
+            background: #6366f1;
+            top: -100px;
+            left: -100px;
+        }
+
+        .aura-2 {
+            width: 500px;
+            height: 500px;
+            background: #a855f7;
+            bottom: -150px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        .aura-3 {
+            width: 300px;
+            height: 300px;
+            background: #ec4899;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -10s;
+        }
+
+        @keyframes drift {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(80px, 50px) scale(1.1); }
+            100% { transform: translate(-40px, -60px) scale(0.95); }
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 0;
+            z-index: 10;
+        }
+
+        /* Glassmorphism Panel */
+        .auth-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 40px 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                        0 0 40px rgba(99, 102, 241, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .auth-header {
+            text-align: center;
+        }
+
+        .auth-logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+            letter-spacing: -1px;
+            animation: textPulse 8s infinite alternate;
+        }
+
+        @keyframes textPulse {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(45deg); }
+        }
+
+        .auth-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Segmented Capsule Tabs */
+        .auth-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 12px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            position: relative;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: color 0.3s, background-color 0.3s;
+            z-index: 2;
+        }
+
+        .tab-btn.active {
+            color: var(--text-color);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Form Controls */
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-field {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: var(--text-color);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .input-field:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.15),
+                        inset 0 0 8px rgba(99, 102, 241, 0.05);
+        }
+
+        /* Submit Button */
+        .submit-btn {
+            background: var(--primary-color);
+            color: var(--text-color);
+            border: none;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+            box-shadow: 0 10px 20px -8px rgba(99, 102, 241, 0.4);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .submit-btn:hover {
+            background-color: var(--primary-color-hover);
+            box-shadow: 0 12px 24px -6px rgba(99, 102, 241, 0.6);
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        .submit-btn:disabled {
+            background-color: #475569;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* Status messages */
+        .status-msg {
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: none;
+            line-height: 1.4;
+        }
+
+        .status-msg.error {
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            color: var(--error-color);
+            display: block;
+        }
+
+        .status-msg.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+            display: block;
+        }
+
+        /* Footer */
+        .auth-footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .auth-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 8px;
+            }
+            .auth-card {
+                padding: 30px 20px;
+                border-radius: 20px;
+                gap: 20px;
+            }
+            .auth-logo {
+                font-size: 1.8rem;
+            }
+            .auth-subtitle {
+                font-size: 0.85rem;
+            }
+            .input-field {
+                padding: 10px 14px;
+                font-size: 0.9rem;
+            }
+            .submit-btn {
+                padding: 12px;
+                font-size: 0.95rem;
+            }
+            #password-strength-section {
+                padding: 10px !important;
+                border-radius: 10px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient Background Blobs (Fixed Container) -->
+    <div class="aura-container">
+        <div class="aura-blob aura-1"></div>
+        <div class="aura-blob aura-2"></div>
+        <div class="aura-blob aura-3"></div>
+    </div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">Prince Form</div>
+                <div class="auth-subtitle" id="auth-sub-label">Access the Form Builder Console</div>
+            </div>
+
+            <!-- Toggle Tabs -->
+            <div class="auth-tabs">
+                <button type="button" class="tab-btn active" id="tab-login" onclick="switchTab('login')">Login</button>
+                <button type="button" class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+            </div>
+
+            <!-- Form -->
+            <form class="auth-form" id="auth-submit-form" onsubmit="handleAuthSubmit(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="input-field" id="username" required placeholder="Type username..." autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                        <input type="password" class="input-field" id="password" required placeholder="Type password..." autocomplete="current-password" style="width: 100%; padding-right: 46px;">
+                        <button type="button" id="toggle-password-visibility" style="position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; outline: none; transition: color 0.2s;" title="Toggle password visibility">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;" id="eye-icon">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Password Strength Requirements (shown for signup only) -->
+                <div id="password-strength-section" style="display: none; flex-direction: column; gap: 8px; margin-top: 4px; padding: 12px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px;">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Password Strength Requirements:</div>
+                    <div class="strength-requirement" id="req-length" style="font-size: 0.8rem; display: flex; align-items: center; gap: 8px; color: var(--text-secondary); transition: all 0.2s;">
+                        <span class="bullet" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #64748b; transition: all 0.2s;"></span>
+                        At least 8 characters
+                    </div>
+                    <div class="strength-requirement" id="req-lower" style="font-size: 0.8rem; display: flex; align-items: center; gap: 8px; color: var(--text-secondary); transition: all 0.2s;">
+                        <span class="bullet" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #64748b; transition: all 0.2s;"></span>
+                        One lowercase letter
+                    </div>
+                    <div class="strength-requirement" id="req-upper" style="font-size: 0.8rem; display: flex; align-items: center; gap: 8px; color: var(--text-secondary); transition: all 0.2s;">
+                        <span class="bullet" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #64748b; transition: all 0.2s;"></span>
+                        One uppercase letter
+                    </div>
+                    <div class="strength-requirement" id="req-digit" style="font-size: 0.8rem; display: flex; align-items: center; gap: 8px; color: var(--text-secondary); transition: all 0.2s;">
+                        <span class="bullet" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #64748b; transition: all 0.2s;"></span>
+                        One numeric digit
+                    </div>
+                    <div class="strength-requirement" id="req-special" style="font-size: 0.8rem; display: flex; align-items: center; gap: 8px; color: var(--text-secondary); transition: all 0.2s;">
+                        <span class="bullet" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #64748b; transition: all 0.2s;"></span>
+                        One special character (!@#$%^&*, etc.)
+                    </div>
+                </div>
+
+                <!-- Alert Message -->
+                <div class="status-msg" id="status-alert"></div>
+
+                <button type="submit" class="submit-btn" id="btn-submit">
+                    <span class="spinner" id="btn-spinner"></span>
+                    <span id="btn-text">Log In</span>
+                </button>
+            </form>
+        </div>
+
+        <div class="auth-footer">
+            Powered by <a href="/">Prince Form</a> &copy; 2026. All rights reserved.
+        </div>
+    </div>
+
+    <script>
+        let mode = "login"; // login or signup
+        const passwordInp = document.getElementById("password");
+        const togglePasswordBtn = document.getElementById("toggle-password-visibility");
+        const eyeIcon = document.getElementById("eye-icon");
+
+        // Hover effect for show/hide password toggle button
+        if (togglePasswordBtn) {
+            togglePasswordBtn.addEventListener("mouseover", () => {
+                togglePasswordBtn.style.color = "var(--text-color)";
+            });
+            togglePasswordBtn.addEventListener("mouseout", () => {
+                togglePasswordBtn.style.color = "var(--text-secondary)";
+            });
+            togglePasswordBtn.addEventListener("click", () => {
+                if (passwordInp.type === "password") {
+                    passwordInp.type = "text";
+                    eyeIcon.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    `;
+                } else {
+                    passwordInp.type = "password";
+                    eyeIcon.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    `;
+                }
+            });
+        }
+
+        function switchTab(targetMode) {
+            mode = targetMode;
+            
+            const tabLogin = document.getElementById("tab-login");
+            const tabSignup = document.getElementById("tab-signup");
+            const btnText = document.getElementById("btn-text");
+            const subLabel = document.getElementById("auth-sub-label");
+            const alertBox = document.getElementById("status-alert");
+            
+            alertBox.className = "status-msg";
+            alertBox.style.display = "none";
+            
+            if (mode === "login") {
+                tabLogin.classList.add("active");
+                tabSignup.classList.remove("active");
+                btnText.innerText = "Log In";
+                subLabel.innerText = "Access the Form Builder Console";
+                document.getElementById("password-strength-section").style.display = "none";
+            } else {
+                tabSignup.classList.add("active");
+                tabLogin.classList.remove("active");
+                btnText.innerText = "Create Account";
+                subLabel.innerText = "Get started for free today";
+                document.getElementById("password-strength-section").style.display = "flex";
+                validatePasswordStrength();
+            }
+        }
+
+        function validatePasswordStrength() {
+            const val = passwordInp.value;
+            
+            const reqs = {
+                length: val.length >= 8,
+                lower: /[a-z]/.test(val),
+                upper: /[A-Z]/.test(val),
+                digit: /[0-9]/.test(val),
+                special: /[!@#$%^&*()_\-+=\[\]{}|;:',.<>?/~`]/.test(val)
+            };
+            
+            updateRequirementIndicator("req-length", reqs.length);
+            updateRequirementIndicator("req-lower", reqs.lower);
+            updateRequirementIndicator("req-upper", reqs.upper);
+            updateRequirementIndicator("req-digit", reqs.digit);
+            updateRequirementIndicator("req-special", reqs.special);
+            
+            return Object.values(reqs).every(r => r === true);
+        }
+        
+        function updateRequirementIndicator(id, isMet) {
+            const elem = document.getElementById(id);
+            if (!elem) return;
+            const bullet = elem.querySelector(".bullet");
+            
+            if (isMet) {
+                elem.style.color = "var(--success-color)";
+                if (bullet) {
+                    bullet.style.background = "var(--success-color)";
+                    bullet.style.boxShadow = "0 0 6px var(--success-color)";
+                }
+            } else {
+                elem.style.color = "var(--text-secondary)";
+                if (bullet) {
+                    bullet.style.background = "#64748b";
+                    bullet.style.boxShadow = "none";
+                }
+            }
+        }
+
+        passwordInp.addEventListener("input", () => {
+            if (mode === "signup") {
+                validatePasswordStrength();
+            }
+        });
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            
+            const usernameInp = document.getElementById("username").value.trim();
+            const passwordInpVal = passwordInp.value;
+            const alertBox = document.getElementById("status-alert");
+            const btnSubmit = document.getElementById("btn-submit");
+            const spinner = document.getElementById("btn-spinner");
+            const btnText = document.getElementById("btn-text");
+            
+            if (!usernameInp || !passwordInpVal) return;
+            
+            if (mode === "signup" && !validatePasswordStrength()) {
+                alertBox.className = "status-msg error";
+                alertBox.innerText = "Please satisfy all password strength requirements.";
+                alertBox.style.display = "block";
+                return;
+            }
+            
+            alertBox.style.display = "none";
+            btnSubmit.disabled = true;
+            spinner.style.display = "inline-block";
+            
+            const url = mode === "login" ? "/api/auth/login" : "/api/auth/signup";
+            
+            try {
+                const res = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username: usernameInp,
+                        password: passwordInpVal
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(data.detail || "Authentication failed.");
+                }
+                
+                alertBox.className = "status-msg success";
+                alertBox.innerText = mode === "login" ? "Login successful! Redirecting..." : "Registration successful! Loading dashboard...";
+                alertBox.style.display = "block";
+                
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 1000);
+                
+            } catch (err) {
+                console.error(err);
+                alertBox.className = "status-msg error";
+                alertBox.innerText = err.message;
+                alertBox.style.display = "block";
+                
+                btnSubmit.disabled = false;
+                spinner.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
