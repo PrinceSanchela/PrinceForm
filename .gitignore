@@ -18,3 +18,4 @@ frontend/static/uploads/*
 !frontend/static/uploads/.gitkeep
 
 forms_links.txt
+server.txt
