@@ -1,83 +1,125 @@
-# Prince Form ?
+# 📋 Prince Form Builder
 
-Prince Form is a self-hosted custom form builder with dynamic glassmorphic branding, real-time validations, database-backed multi-user workspaces, and integrated response analytics.
+[![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.95.0+-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-4.4+-4ea94b.svg?style=flat&logo=mongodb)](https://www.mongodb.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-2.0-indigo.svg)](#)
 
-Developed as a highly customizable alternative to Google Forms, Prince Form allows form creators to build, style, and secure questionnaires with a modern SaaS aesthetic.
-
----
-
-## Key Features
-
-*   **Multi-User Workspaces**: Secure creator registration and login with multi-user isolation. Creators only see and manage their own forms.
-*   **Brute-Force Account Protection**: Automatic creator account lockout for 15 minutes after 5 consecutive failed login attempts.
-*   **Base64 Media Persistence**: Client-side media conversion to Base64 strings. Logos and header banners are stored directly in MongoDB, bypassing ephemeral file-system wipes on host platforms like Render.
-*   **Advanced Response Validations**:
-    *   Configure multiple validation rules (e.g. Length + Starts With) per question field.
-    *   Asynchronous **Unique Answer** lookup to check database submissions on-blur and prevent duplicate records.
-    *   Regular expression mapping, character boundary restrictions, and input formatting.
-*   **Aesthetic Branding Options**: Glassmorphic and elevated layout configurations, custom font pairings, custom accent color themes, and success screen splash layouts.
-*   **Response Analytics**: Visual analytics breakdown, response tracking table, and CSV exporting capability.
+Prince Form is an ultra-premium, modern, and highly interactive drag-and-drop web form builder. Designed with a sleek, split-screen SaaS dashboard interface, it allows creators to easily design multi-page forms, configure advanced validation constraints, preview form links, and monitor submissions in real time.
 
 ---
 
-## Tech Stack
+## 🚀 Key Features
 
-*   **Backend**: FastAPI, Uvicorn, Pydantic, Motor (MongoDB Async Driver)
-*   **Database**: MongoDB (Atlas or Local)
-*   **Frontend**: Vanilla HTML5, Vanilla CSS3 (Glassmorphism & Drift Aura Animations), Vanilla JS
+### 🎨 Visual & Layout Upgrades (v2.0)
+*   **Dual-Column Visual Designer**: Drag and drop form blocks (Headers, Text Fields, Dropdowns, Choice lists, Date Pickers, and File Upload zones) from the toolbox sidebar directly onto the canvas.
+*   **Collapsible Onboarding Guide**: Interactive left marketing sidebar featuring onboarding guides, a "View Demo" trigger to instantly populate a pre-designed multi-page template, and a "Get Started" toggle.
+*   **Multi-Page Layouts & Steppers**: Organizes extensive forms into numbered pages, controlled dynamically with page tabs on the editor canvas and responsive navigation bars on the responder interface.
+*   **Split-Screen Premium Login**: Modern sign-in page featuring a light blue underwater watercolor gradient, an inline SVG checklist clipboard graphic, a hardware-accelerated carousel slideshow, and underline inputs.
+*   **Input Cursor Protection**: Disables standard I-beam cursors and highlights on static text fields (`user-select: none; cursor: default;`) to provide a native application experience.
 
----
-
-## Getting Started
-
-### Prerequisites
-
-*   Python 3.8+
-*   MongoDB Instance (local or MongoDB Atlas connection URI)
-
-### Quick Setup
-
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/yourusername/prince-form.git
-    cd prince-form
-    ```
-
-2.  **Environment Variables Setup**:
-    Copy the sample environment file and replace values with your database credentials:
-    ```bash
-    cp .env.example .env
-    ```
-    Open `.env` and configure your `MONGODB_URL` and `DATABASE_NAME`.
-
-3.  **Run the Server Startup Bootstrapper**:
-    Prince Form includes an automatic runner script that configures the virtual environment, installs all backend requirements, and starts the server:
-    ```bash
-    python run.py
-    ```
-
-4.  **Access the Dashboard**:
-    Open [http://localhost:5000](http://localhost:5000) in your web browser.
+### 🔒 Core Capabilities (v1.0)
+*   **Secure Creator Authentication**: Uses cryptographically secure random session tokens (`secrets.token_hex(32)`) and secure PBKDF2 hashing functions.
+*   **Brute-Force Lockout Defense**: Monitors authentication attempts and locks accounts for 15 minutes after 5 consecutive failures.
+*   **Live Password Strength Indicator**: Interactive checklist verifying uppercase letters, lowercase letters, numbers, special characters, and minimum length requirements dynamically as the user types.
+*   **Padlock Visibility Toggle**: Clickable padlock icon next to password input fields that transitions between locked and unlocked paths to reveal or hide the text.
+*   **Submission Base64 File Loader**: Handles client-side file reading (`FileReader.readAsDataURL`) and saves the Base64 representation directly in MongoDB.
 
 ---
 
-## Project Structure
+## 🛠️ Tech Stack
+
+*   **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Asynchronous Python Framework), [Motor](https://motor.readthedocs.io/) (Async MongoDB driver), [Uvicorn](https://www.uvicorn.org/) (ASGI server)
+*   **Frontend**: HTML5 Semantic templates, Vanilla CSS3 (Underwater radial gradients, translucent grid overlay, glassmorphism), Vanilla JavaScript (HTML5 Drag and Drop API)
+*   **Database**: [MongoDB](https://www.mongodb.com/) (User accounts, secure sessions, forms metadata, and client response records)
+
+---
+
+## 📁 Project Structure
 
 ```text
-+-- backend/            # FastAPI ASGI backend app
-�   +-- config.py       # Configuration configurations loader
-�   +-- database.py     # MongoDB client and indexes setup
-�   +-- main.py         # Routing, authentication, and form APIs
-�   +-- models.py       # Pydantic schemas (User, Form, Response)
-+-- frontend/           # Static templates and web assets
-�   +-- templates/      # Jinja2 HTML pages (auth, dashboard, form_view)
-�   +-- static/         # Public CSS stylesheets and JS files
-+-- run.py              # Local virtual environment bootstrapper and runner
-+-- render.yaml         # Cloud blueprint for Render hosting
+Prince Form/
+│
+├── backend/
+│   ├── database.py       # Asynchronous connection handler for MongoDB
+│   ├── models.py         # Pydantic schema validation structures
+│   └── main.py           # Routing endpoints, auth, validation, and session logics
+│
+├── frontend/
+│   ├── static/
+│   │   ├── css/
+│   │   │   ├── common.css     # Global variables and premium typography tokens
+│   │   │   ├── dashboard.css  # Sidebar element widgets and drag classes
+│   │   │   └── form.css       # Responder card styles and brand watermarks
+│   │   └── js/
+│   │       ├── dashboard.js   # Drag & Drop engine, duplication, and guide toggles
+│   │       └── form.js        # Responder pagination steppers and Base64 uploads
+│   └── templates/
+│       ├── auth.html          # Split-screen access control with carousel
+│       ├── dashboard.html     # Creator workspace canvas
+│       └── form_view.html     # Public-facing responder wizard
+│
+├── requirements.txt      # Python dependencies list
+├── run.py                # Setup, dependency updates, and server bootstrap runner
+└── server.txt            # PowerShell process launch commands reference
 ```
 
 ---
 
-## License
+## ⚙️ Configuration & Environment
 
-Distributed under the MIT License. See `LICENSE` for more information.
+The application reads configurations from a local `.env` file. Copy the sample file to configure your local setup:
+
+```bash
+cp .env.example .env
+```
+
+Define the following environment variables:
+
+| Variable | Description | Example Value |
+| :--- | :--- | :--- |
+| `PORT` | Local server port binding | `5000` |
+| `ENV` | Environment state indicator | `development` / `production` |
+| `MONGO_URI` | MongoDB Connection URL | `mongodb+srv://<user>:<password>@cluster.mongodb.net/princeform` |
+
+---
+
+## 🏁 Local Installation & Quick Start
+
+1.  **Clone the Repository**:
+    ```bash
+    git clone https://github.com/PrinceSanchela/PrinceForm.git
+    cd PrinceForm
+    ```
+
+2.  **Start the Server**:
+    Run the automated helper script. This script will automatically create a local Python virtual environment (`.venv`), upgrade pip, install dependencies from `requirements.txt`, and boot the Uvicorn server:
+    ```bash
+    python run.py
+    ```
+
+3.  **Access the Dashboard**:
+    Open [http://localhost:5000](http://localhost:5000) in your browser to build forms. If you are not authenticated, you will be redirected to the secure login page at [http://localhost:5000/login](http://localhost:5000/login).
+
+---
+
+## 🧪 Testing
+
+The repository contains isolated test cases to verify the database sessions, PBKDF2 hash verify routines, brute-force lockouts, and password validation.
+
+Run the security test script inside the virtual environment:
+
+```bash
+# Windows
+.\.venv\Scripts\python scratch/test_advanced_auth.py
+
+# Linux/macOS
+./.venv/bin/python scratch/test_advanced_auth.py
+```
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for details.
