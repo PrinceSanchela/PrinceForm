@@ -6,6 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
     initFormResponder();
 });
 
+let currentResponderPage = 1;
+let totalResponderPages = 1;
+
 function initFormResponder() {
     const formElement = document.getElementById("responder-form-element");
     if (!formElement) return;
@@ -24,6 +27,22 @@ function initFormResponder() {
     
     // Set up live keyboard blocks & warnings for length limits
     setupLiveLengthValidations();
+    
+    // Set up file input listeners
+    setupFileInputEvents();
+    
+    // Determine total pages from DOM cards
+    const cards = document.querySelectorAll(".question-card");
+    const pages = new Set();
+    cards.forEach(card => {
+        const p = parseInt(card.dataset.qPage) || 1;
+        pages.add(p);
+    });
+    totalResponderPages = pages.size > 0 ? Math.max(...pages) : 1;
+    
+    if (totalResponderPages > 1) {
+        setupResponderPagination();
+    }
 }
 
 function setupLiveLengthValidations() {
@@ -164,6 +183,12 @@ async function validateCard(card) {
                 answerVal = dateInp.value || null;
             }
             break;
+        case "file":
+            const fInpVal = card.querySelector("input[type='file']");
+            if (fInpVal) {
+                answerVal = fInpVal.dataset.base64 || null;
+            }
+            break;
     }
     
     let failedRuleText = null;
@@ -274,7 +299,14 @@ function setupCardFocusEffects() {
 }
 
 async function handleFormSubmission(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
+    // Multi-page navigation check: if pressing enter inside form and not on last page, go next
+    if (totalResponderPages > 1 && currentResponderPage < totalResponderPages) {
+        const nextBtn = document.querySelector(".form-next-btn");
+        if (nextBtn) nextBtn.click();
+        return;
+    }
     
     const formId = document.getElementById("form-id-hidden").value;
     const cards = document.querySelectorAll(".question-card");
@@ -318,6 +350,10 @@ async function handleFormSubmission(e) {
                     const dt = card.querySelector("input[type='date']").value;
                     answerVal = dt || null;
                     break;
+                case "file":
+                    const fInp = card.querySelector("input[type='file']");
+                    answerVal = fInp && fInp.dataset.base64 ? fInp.dataset.base64 : null;
+                    break;
             }
             
             if (answerVal !== null) {
@@ -343,10 +379,13 @@ async function handleFormSubmission(e) {
         answers: answers
     };
     
+    const submitBtn = document.getElementById("btn-submit-form") || document.querySelector(".form-next-btn");
+    
     try {
-        const submitBtn = document.getElementById("btn-submit-form");
-        submitBtn.disabled = true;
-        submitBtn.innerText = "Submitting...";
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Submitting...";
+        }
         
         const response = await fetch(`/api/forms/${formId}/responses`, {
             method: "POST",
@@ -364,9 +403,10 @@ async function handleFormSubmission(e) {
     } catch (err) {
         console.error(err);
         alert(err.message || "An error occurred during submission. Please try again.");
-        const submitBtn = document.getElementById("btn-submit-form");
-        submitBtn.disabled = false;
-        submitBtn.innerText = "Submit";
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = totalResponderPages > 1 ? "Submit" : "Submit";
+        }
     }
 }
 
@@ -676,4 +716,169 @@ function escapeHTML(str) {
             '"': '&quot;'
         }[tag] || tag)
     );
+}
+
+function setupFileInputEvents() {
+    const fileZones = document.querySelectorAll(".file-upload-zone");
+    fileZones.forEach(zone => {
+        const fileInp = zone.querySelector("input[type='file']");
+        if (!fileInp) return;
+        
+        zone.addEventListener("click", () => fileInp.click());
+        
+        fileInp.addEventListener("change", () => {
+            if (fileInp.files.length > 0) {
+                const file = fileInp.files[0];
+                
+                if (file.size > 10 * 1024 * 1024) {
+                    alert("File size exceeds 10MB limit.");
+                    fileInp.value = "";
+                    return;
+                }
+                
+                const label = zone.querySelector("span:nth-of-type(2)");
+                if (label) {
+                    label.innerText = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                }
+                zone.style.borderColor = "var(--theme-color)";
+                zone.style.background = "rgba(99, 102, 241, 0.04)";
+                
+                // Read file as Base64 Data URI
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    fileInp.dataset.base64 = e.target.result;
+                    // Trigger validation immediately
+                    const card = zone.closest(".question-card");
+                    if (card) validateCard(card);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+}
+
+function setupResponderPagination() {
+    currentResponderPage = 1;
+    
+    const footer = document.querySelector(".form-footer");
+    if (!footer) return;
+    
+    // Clear legacy submission buttons
+    footer.innerHTML = "";
+    footer.style.display = "flex";
+    footer.style.justifyContent = "space-between";
+    footer.style.alignItems = "center";
+    footer.style.width = "100%";
+    footer.style.gap = "12px";
+    
+    // Back navigation button
+    const backBtn = document.createElement("button");
+    backBtn.type = "button";
+    backBtn.className = "btn btn-secondary form-back-btn";
+    backBtn.innerText = "Back";
+    backBtn.style.display = "none";
+    backBtn.style.flex = "1";
+    backBtn.style.margin = "0";
+    backBtn.style.minHeight = "unset";
+    backBtn.style.padding = "12px";
+    backBtn.style.fontSize = "0.95rem";
+    backBtn.style.fontWeight = "600";
+    
+    // Page index descriptor
+    const indicator = document.createElement("div");
+    indicator.className = "page-indicator-text";
+    indicator.style.fontSize = "0.85rem";
+    indicator.style.fontWeight = "600";
+    indicator.style.color = "var(--text-color-secondary)";
+    indicator.style.whiteSpace = "nowrap";
+    
+    // Next/Submit button
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "branded-submit-btn form-next-btn";
+    nextBtn.innerText = "Next";
+    nextBtn.style.flex = "2";
+    nextBtn.style.margin = "0";
+    nextBtn.style.backgroundColor = "var(--button-color)";
+    nextBtn.style.color = "#ffffff";
+    nextBtn.style.border = "none";
+    nextBtn.style.borderRadius = "var(--border-radius-sm)";
+    nextBtn.style.padding = "12px";
+    nextBtn.style.fontSize = "0.95rem";
+    nextBtn.style.fontWeight = "600";
+    nextBtn.style.cursor = "pointer";
+    
+    footer.appendChild(backBtn);
+    footer.appendChild(indicator);
+    footer.appendChild(nextBtn);
+    
+    const updatePaginationView = () => {
+        const cards = document.querySelectorAll(".question-card");
+        cards.forEach(card => {
+            const cardPage = parseInt(card.dataset.qPage) || 1;
+            if (cardPage === currentResponderPage) {
+                card.style.display = "block";
+            } else {
+                card.style.display = "none";
+            }
+        });
+        
+        // Show/hide back button
+        if (currentResponderPage === 1) {
+            backBtn.style.display = "none";
+        } else {
+            backBtn.style.display = "block";
+        }
+        
+        // Next/Submit label
+        if (currentResponderPage === totalResponderPages) {
+            nextBtn.innerText = "Submit";
+        } else {
+            nextBtn.innerText = "Next";
+        }
+        
+        indicator.innerText = `Page ${currentResponderPage} of ${totalResponderPages}`;
+        
+        // Scroll to form header top
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    
+    backBtn.addEventListener("click", () => {
+        if (currentResponderPage > 1) {
+            currentResponderPage--;
+            updatePaginationView();
+        }
+    });
+    
+    nextBtn.addEventListener("click", async () => {
+        // Validate cards on current page first
+        const currentCards = Array.from(document.querySelectorAll(".question-card")).filter(card => {
+            return (parseInt(card.dataset.qPage) || 1) === currentResponderPage;
+        });
+        
+        let isPageValid = true;
+        const validationPromises = currentCards.map(async (card) => {
+            const isValid = await validateCard(card);
+            if (!isValid) isPageValid = false;
+        });
+        await Promise.all(validationPromises);
+        
+        if (!isPageValid) {
+            const firstError = document.querySelector(".error-text");
+            if (firstError) {
+                firstError.closest(".question-card").scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+            return;
+        }
+        
+        if (currentResponderPage < totalResponderPages) {
+            currentResponderPage++;
+            updatePaginationView();
+        } else {
+            // Trigger actual submission logic
+            handleFormSubmission();
+        }
+    });
+    
+    updatePaginationView();
 }

@@ -64,9 +64,22 @@
             
             <!-- Loop Questions -->
             {% for q in form.questions %}
+            {% if q.type == "header" %}
+            <div class="form-card-base card-style-{{ form.branding.cardStyle }} question-card section-header-card animate-fade-in" 
+                 data-q-id="{{ q.id }}" 
+                 data-q-type="{{ q.type }}"
+                 data-q-page="{{ q.page or 1 }}"
+                 style="border-top: 4px solid var(--theme-color); animation-delay: {{ loop.index * 0.05 }}s">
+                <h3 style="font-family:'Outfit'; font-size:1.25rem; font-weight:700; margin:0; color:var(--text-color);">{{ q.label }}</h3>
+                {% if q.placeholder %}
+                <p style="font-size:0.85rem; color:var(--text-color-secondary); margin: 6px 0 0 0;">{{ q.placeholder }}</p>
+                {% endif %}
+            </div>
+            {% else %}
             <div class="form-card-base card-style-{{ form.branding.cardStyle }} question-card animate-fade-in" 
                  data-q-id="{{ q.id }}" 
                  data-q-type="{{ q.type }}" 
+                 data-q-page="{{ q.page or 1 }}"
                  data-q-required="{{ 'true' if q.required else 'false' }}"
                  data-q-val-type="{{ q.validationType or 'none' }}"
                  data-q-val-pattern="{{ q.validationPattern or '' }}"
@@ -122,10 +135,18 @@
                         </label>
                         {% endfor %}
                     </div>
+                    
+                    {% elif q.type == "file" %}
+                    <div style="border: 2px dashed var(--border-color); padding: 20px; border-radius: var(--border-radius-sm); text-align: center; background: rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;" class="file-upload-zone" onmouseover="this.style.background='rgba(99,102,241,0.02)';" onmouseout="this.style.background='rgba(0,0,0,0.01)';">
+                        <span style="font-size: 1.5rem; display: block; margin-bottom: 6px;">📁</span>
+                        <span style="font-size: 0.85rem; color: var(--text-color-secondary); font-weight: 500;">Select file to upload (Max 10MB)</span>
+                        <input type="file" style="display: none;">
+                    </div>
                     {% endif %}
                     
                 </div>
             </div>
+            {% endif %}
             {% endfor %}
             
             <!-- Submission Controls -->

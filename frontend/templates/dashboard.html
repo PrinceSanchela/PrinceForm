@@ -17,26 +17,129 @@
         <div class="aura-blob aura-blob-3"></div>
     </div>
 
-    <div class="dashboard-container">
+    <div class="dashboard-wrapper-split">
         
-        <!-- Header -->
-        <header class="dashboard-header animate-fade-in">
-            <div class="logo-container">
-                <span class="logo-text gradient-text">Prince Form</span>
-                <span class="brand-badge">Builder</span>
+        <!-- LEFT: Marketing Sidebar Panel -->
+        <aside class="marketing-sidebar animate-fade-in">
+            <div class="marketing-brand">
+                <svg class="marketing-logo-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 4.5L5.5 13L12 6.5L18.5 13L22 4.5L17 19.5H7L2 4.5Z" fill="#3b82f6" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                <span class="marketing-logo-text">PrinceForm</span>
             </div>
             
-            <nav class="tabs-nav">
-                <button class="tab-btn active" data-tab="forms">My Forms</button>
-                <button class="tab-btn" data-tab="builder">Form Builder</button>
-                <button class="tab-btn" data-tab="responses">Responses</button>
-            </nav>
-
-            <div class="user-profile-section" style="display: flex; align-items: center; gap: 12px;">
-                <span class="username-text" style="font-family: 'Outfit', sans-serif; font-size: 0.95rem; color: var(--text-color-primary); font-weight: 500;">Hello, <strong style="color: var(--primary-color);">{{ username }}</strong></span>
-                <button id="btn-logout" class="btn btn-secondary" style="font-size: 0.85rem; padding: 6px 12px; margin: 0; min-height: unset; height: auto;">Logout</button>
+            <h1 class="marketing-title">Drag & Drop Form Builder</h1>
+            <p class="marketing-subtitle">Create beautiful, responsive forms in minutes. No coding required.</p>
+            
+            <ul class="marketing-features">
+                <li>
+                    <div class="feature-icon-box">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9M20.25 20.25v-4.5m0 4.5h-4.5m4.5 0L15 15" />
+                        </svg>
+                    </div>
+                    <div class="feature-text">
+                        <strong>Drag & Drop Builder</strong>
+                        <span>Build forms visually with ease</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="feature-icon-box">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25a2.25 2.25 0 01-2.25-2.25V18v-2.25z" />
+                        </svg>
+                    </div>
+                    <div class="feature-text">
+                        <strong>Multiple Field Types</strong>
+                        <span>Text, email, dropdown, choices & more</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="feature-icon-box">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <div class="feature-text">
+                        <strong>Smart Validations</strong>
+                        <span>Add rules and validations effortlessly</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="feature-icon-box">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                        </svg>
+                    </div>
+                    <div class="feature-text">
+                        <strong>Responsive Design</strong>
+                        <span>Forms that look great on any device</span>
+                    </div>
+                </li>
+            </ul>
+            
+            <div class="marketing-actions">
+                <button class="btn btn-primary btn-marketing-cta">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right:4px;">
+                        <path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM11 7H13V13H17V15H11V7Z" fill="currentColor"/>
+                    </svg>
+                    Get Started Free
+                </button>
+                <a href="#" class="marketing-demo-link">View Demo <span class="arrow">→</span></a>
             </div>
-        </header>
+        </aside>
+        
+        <!-- RIGHT: App Window Card Stack -->
+        <div class="app-card-stack-wrapper">
+            <div class="stack-layer layer-2"></div>
+            <div class="stack-layer layer-1"></div>
+            
+            <div class="app-dashboard-card animate-fade-in">
+                
+                <!-- Main Header inside the App Card -->
+                <header class="app-header">
+                    <div class="app-logo-group">
+                        <svg class="app-logo-crown" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2 4.5L5.5 13L12 6.5L18.5 13L22 4.5L17 19.5H7L2 4.5Z" fill="#3b82f6" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="app-logo-text">PrinceForm</span>
+                    </div>
+                    
+                    <div class="app-header-search">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.602 10.602z" />
+                        </svg>
+                        <input type="text" placeholder="Search for something...">
+                    </div>
+                    
+                    <div class="app-header-right">
+                        <div class="sales-support-info">
+                            <span class="support-label">For sales & support</span>
+                            <a href="tel:+919428833210" class="support-phone">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 13px; height: 13px; transform: rotate(90deg); margin-right: 2px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.824-1.102-5.196-3.474-6.298-6.298l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+                                </svg>
+                                +91 9428833210
+                            </a>
+                        </div>
+                        
+                        <div class="user-pill-logout">
+                            <span class="user-greeting">Hello, <strong>{{ username }}</strong></span>
+                            <button id="btn-toggle-welcome-banner" class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 10px; margin: 0; min-height: unset; height: auto;" title="Toggle Onboarding Welcome Banner">Guide</button>
+                            <button id="btn-logout" class="btn btn-secondary">Logout</button>
+                        </div>
+                    </div>
+                </header>
+                
+                <!-- Secondary navigation for dashboard tabs -->
+                <nav class="tabs-nav app-tabs-nav">
+                    <button class="tab-btn active" data-tab="forms">My Forms</button>
+                    <button class="tab-btn" data-tab="builder">Form Builder</button>
+                    <button class="tab-btn" data-tab="responses">Responses</button>
+                </nav>
+                
+                <div class="app-card-content">
         
         <!-- ================================================================= -->
         <!-- VIEW 1: MY FORMS LIST -->
@@ -58,15 +161,148 @@
         <main id="builder-tab" class="tab-content">
             <div class="builder-layout">
                 
-                <!-- Left panel: Question Editor & Design Configurations -->
+                <!-- Sidebar Elements Palette (Left Column) -->
+                <aside class="toolbox-sidebar">
+                    <div class="toolbox-section">
+                        <div class="toolbox-section-header" onclick="toggleToolboxSection(this)">
+                            <span>Basic elements</span>
+                            <svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 14px; height: 14px; transition: transform 0.2s;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </div>
+                        <div class="toolbox-grid" id="toolbox-drag-items">
+                            <!-- Header -->
+                            <div class="toolbox-item" draggable="true" data-type="header">
+                                <div class="toolbox-item-preview">
+                                    <div class="preview-mock-header">
+                                        <div class="preview-mock-title">Title goes here</div>
+                                        <div class="preview-mock-subtitle">Subtitle goes here...</div>
+                                    </div>
+                                </div>
+                                <span class="item-name">Header</span>
+                            </div>
+                            
+                            <!-- Text Box -->
+                            <div class="toolbox-item" draggable="true" data-type="text">
+                                <div class="toolbox-item-preview">
+                                    <div class="preview-mock-input-group">
+                                        <div class="preview-mock-label">A text field goes here</div>
+                                        <div class="preview-mock-input">Input</div>
+                                    </div>
+                                </div>
+                                <span class="item-name">Text Box</span>
+                            </div>
+                            
+                            <!-- Text Area -->
+                            <div class="toolbox-item" draggable="true" data-type="paragraph">
+                                <div class="toolbox-item-preview">
+                                    <div class="preview-mock-textarea-group">
+                                        <div class="preview-mock-label">A text area goes here</div>
+                                        <div class="preview-mock-textarea">Text Area</div>
+                                    </div>
+                                </div>
+                                <span class="item-name">Text Area</span>
+                            </div>
+                            
+                            <!-- Dropdown -->
+                            <div class="toolbox-item" draggable="true" data-type="select">
+                                <div class="toolbox-item-preview">
+                                    <div class="preview-mock-select-group">
+                                        <div class="preview-mock-label">A dropdown menu</div>
+                                        <div class="preview-mock-select">
+                                            <span>Choose</span>
+                                            <svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px; height:10px; opacity:0.6;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="item-name">Dropdown</span>
+                            </div>
+                            
+                            <!-- Single Choice -->
+                            <div class="toolbox-item" draggable="true" data-type="radio">
+                                <div class="toolbox-item-preview">
+                                    <div class="preview-mock-choices-group">
+                                        <div class="preview-mock-label">A few single choices</div>
+                                        <div class="preview-mock-choice-row">
+                                            <div class="mock-radio checked"></div>
+                                            <div class="mock-choice-text">Option 1</div>
+                                        </div>
+                                        <div class="preview-mock-choice-row">
+                                            <div class="mock-radio"></div>
+                                            <div class="mock-choice-text">Option 2</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="item-name">Single Choice</span>
+                            </div>
+                            
+                            <!-- Multiple Choice -->
+                            <div class="toolbox-item" draggable="true" data-type="checkbox">
+                                <div class="toolbox-item-preview">
+                                    <div class="preview-mock-choices-group">
+                                        <div class="preview-mock-label">A few multiple choices</div>
+                                        <div class="preview-mock-choice-row">
+                                            <div class="mock-checkbox checked"></div>
+                                            <div class="mock-choice-text">Option 1</div>
+                                        </div>
+                                        <div class="preview-mock-choice-row">
+                                            <div class="mock-checkbox"></div>
+                                            <div class="mock-choice-text">Option 2</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="item-name">Multiple Choice</span>
+                            </div>
+                            
+                            <!-- Date Picker -->
+                            <div class="toolbox-item" draggable="true" data-type="date">
+                                <div class="toolbox-item-preview">
+                                    <div class="preview-mock-date-group">
+                                        <div class="preview-mock-label">A date picker question</div>
+                                        <div class="preview-mock-input mock-date-input">
+                                            <span>DD/MM/YYYY</span>
+                                            <svg class="calendar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; opacity:0.6;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="item-name">Date Picker</span>
+                            </div>
+                            
+                            <!-- File Upload -->
+                            <div class="toolbox-item" draggable="true" data-type="file">
+                                <div class="toolbox-item-preview">
+                                    <div class="preview-mock-file-group">
+                                        <div class="preview-mock-label">A file upload question</div>
+                                        <div class="preview-mock-file-zone">
+                                            <div class="plus-icon-circle">+</div>
+                                            <span>Upload File</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="item-name">File Upload</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Center panel: Question Editor & Design Configurations -->
                 <section class="editor-panel">
                     
                     <div class="builder-section-title">
                         <span class="gradient-text">Form Structure & Content</span>
                         <div style="display:flex; gap:8px;">
                             <button id="btn-share-builder" class="btn btn-secondary" style="font-size:0.85rem; padding:6px 12px; display:none;">Share</button>
+                            <button id="btn-preview-form" class="btn btn-secondary" style="font-size:0.85rem; padding:6px 16px;">Live Preview</button>
                             <button id="btn-save-form" class="btn btn-primary" style="font-size:0.85rem; padding:6px 16px;">Save Form Configuration</button>
                         </div>
+                    </div>
+
+                    <!-- Multi-Page Tab Controls -->
+                    <div class="pages-tabs-container" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; background: rgba(0,0,0,0.02); padding: 8px 12px; border-radius: 8px; border: 1px dashed var(--border-color);">
+                        <div class="pages-tabs" id="builder-pages-tabs" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                        <button type="button" id="btn-add-page" class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 10px; margin: 0; min-height: unset; height: auto;">+ Add Page</button>
                     </div>
                     
                     <!-- Basic details -->
@@ -307,12 +543,16 @@
             </section>
         </main>
         
-        <!-- Footer Branding -->
-        <footer style="text-align: center; padding: 24px 0 12px; font-size: 0.85rem; color: var(--text-color-muted); border-top: 1px solid var(--border-color); margin-top: 40px;" class="animate-fade-in">
-            Made By <a href="https://prince-sanchela.vercel.app" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">Prince Sanchela</a> Custom Branded Forms
-        </footer>
-        
-    </div>
+                </div> <!-- End of app-card-content -->
+                
+                <!-- Footer Branding -->
+                <footer style="text-align: center; padding: 24px 0 12px; font-size: 0.85rem; color: var(--text-color-muted); border-top: 1px solid var(--border-color); margin-top: 40px;" class="animate-fade-in">
+                    Made By <a href="https://prince-sanchela.vercel.app" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">Prince Sanchela</a> Custom Branded Forms
+                </footer>
+                
+            </div> <!-- End of app-dashboard-card -->
+        </div> <!-- End of app-card-stack-wrapper -->
+    </div> <!-- End of dashboard-wrapper-split -->
 
     <!-- Share Form Modal Overlay -->
     <div id="share-modal" class="modal-overlay" style="display:none;">

@@ -8,6 +8,8 @@ let activeForm = null;
 let activeFormResponses = [];
 let isEditing = false;
 let currentPreviewMode = "form";
+let activePage = 1;
+let totalPages = 1;
 
 // Theme Colors Presets
 const PRESET_COLORS = [
@@ -22,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initApp() {
+    checkFirstTimeVisit();
     setupTabNavigation();
     loadForms();
     setupBrandingListeners();
@@ -30,6 +33,13 @@ function initApp() {
     // Bind global buttons
     document.getElementById("btn-new-form").addEventListener("click", createNewForm);
     document.getElementById("btn-save-form").addEventListener("click", saveActiveForm);
+    document.getElementById("btn-preview-form").addEventListener("click", () => {
+        if (activeForm && activeForm.id) {
+            window.open(`/form/${activeForm.id}`, '_blank');
+        } else {
+            alert("Please save the form first to preview it.");
+        }
+    });
     document.getElementById("btn-add-question").addEventListener("click", addQuestion);
     document.getElementById("btn-export-csv").addEventListener("click", exportResponsesToCSV);
     
@@ -45,6 +55,46 @@ function initApp() {
             openShareModal(formUrl);
         }
     });
+
+    // Guide/welcome banner toggle
+    const toggleWelcomeBtn = document.getElementById("btn-toggle-welcome-banner");
+    if (toggleWelcomeBtn) {
+        toggleWelcomeBtn.addEventListener("click", () => {
+            const wrapper = document.querySelector(".dashboard-wrapper-split");
+            if (wrapper) {
+                const isHidden = wrapper.classList.contains("hide-marketing");
+                if (isHidden) {
+                    wrapper.classList.remove("hide-marketing");
+                    localStorage.setItem("princeform_visited", "false");
+                } else {
+                    wrapper.classList.add("hide-marketing");
+                    localStorage.setItem("princeform_visited", "true");
+                }
+            }
+        });
+    }
+
+    // Marketing sidebar button bindings
+    const marketingCta = document.querySelector(".btn-marketing-cta");
+    if (marketingCta) {
+        marketingCta.addEventListener("click", () => {
+            localStorage.setItem("princeform_visited", "true");
+            const wrapper = document.querySelector(".dashboard-wrapper-split");
+            if (wrapper) wrapper.classList.add("hide-marketing");
+            createNewForm();
+        });
+    }
+
+    const demoLink = document.querySelector(".marketing-demo-link");
+    if (demoLink) {
+        demoLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            localStorage.setItem("princeform_visited", "true");
+            const wrapper = document.querySelector(".dashboard-wrapper-split");
+            if (wrapper) wrapper.classList.add("hide-marketing");
+            loadDemoForm();
+        });
+    }
 
     // Bind Preview View Mode Toggles
     const formToggle = document.getElementById("preview-toggle-form");
@@ -149,6 +199,21 @@ function initApp() {
             }
         });
     }
+
+    // Bind Page Addition
+    const addPageBtn = document.getElementById("btn-add-page");
+    if (addPageBtn) {
+        addPageBtn.addEventListener("click", () => {
+            totalPages += 1;
+            activePage = totalPages;
+            renderPagesTabs();
+            renderQuestionsEditorList();
+            updateLivePreview();
+        });
+    }
+
+    // Setup drag and drop toolbox listeners
+    initDragAndDrop();
 }
 
 function initRichTextEditors() {
@@ -311,7 +376,10 @@ async function createNewForm() {
                 label: "Untitled Question",
                 required: false,
                 placeholder: "Type your answer here",
-                options: []
+                options: [],
+                page: 1,
+                order: 0,
+                validations: []
             }
         ],
         acceptingResponses: true,
@@ -351,6 +419,9 @@ async function loadFormToEdit(formId) {
 
 async function saveActiveForm() {
     if (!activeForm) return;
+    
+    // Normalize and sort questions before saving
+    normalizeQuestionsOrder();
     
     const saveBtn = document.getElementById("btn-save-form");
     const originalHtml = saveBtn.innerHTML;
@@ -500,6 +571,17 @@ function renderFormsGrid() {
 // BUILDER LOGIC
 // =========================================================================
 function setupBuilderWorkspace() {
+    // Normalize page and order for legacy compatibility
+    activeForm.questions.forEach((q, idx) => {
+        if (q.page === undefined || q.page === null) q.page = 1;
+        if (q.order === undefined || q.order === null) q.order = idx;
+    });
+    
+    activePage = 1;
+    totalPages = activeForm.questions.reduce((max, q) => Math.max(max, q.page || 1), 1);
+    
+    renderPagesTabs();
+
     // Populate Title and description inputs
     document.getElementById("form-title-input").value = activeForm.title;
     const descEditor = document.getElementById("form-desc-editor");
@@ -703,15 +785,24 @@ function renderQuestionsEditorList() {
     const list = document.getElementById("questions-editor-list");
     list.innerHTML = "";
     
-    if (activeForm.questions.length === 0) {
-        list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-color-muted);">No questions added. Click "+ Add Question" below.</div>`;
+    // Sort and filter questions for the current page
+    const pageQuestions = activeForm.questions
+        .filter(q => (q.page || 1) === activePage)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+        
+    if (pageQuestions.length === 0) {
+        list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-color-muted);">No questions on this page. Drag elements from the left sidebar or click "+ Add Question Element" below.</div>`;
         return;
     }
     
-    activeForm.questions.forEach((question, index) => {
+    pageQuestions.forEach((question, pageIdx) => {
+        const index = activeForm.questions.indexOf(question);
+        
         const card = document.createElement("div");
         card.className = "question-edit-card aura-glow-hover animate-fade-in";
         card.dataset.index = index;
+        card.dataset.id = question.id;
+        card.setAttribute("draggable", "true");
         
         let optionsHtml = "";
         
@@ -842,29 +933,27 @@ function renderQuestionsEditorList() {
         }
         
         card.innerHTML = `
+            <!-- Top Center Drag Handle -->
+            <div class="q-card-drag-handle-center" title="Drag to reorder card">
+                <div class="q-drag-dots-grid">
+                    <div class="q-drag-dot"></div>
+                    <div class="q-drag-dot"></div>
+                    <div class="q-drag-dot"></div>
+                    <div class="q-drag-dot"></div>
+                    <div class="q-drag-dot"></div>
+                    <div class="q-drag-dot"></div>
+                </div>
+            </div>
+
             <div class="q-reorder-strip">
                 <div class="q-reorder-strip-left">
-                    <div class="q-drag-handle" title="Drag handle (use arrows to move)">
-                        <div class="q-drag-dot-row">
-                            <div class="q-drag-dot"></div>
-                            <div class="q-drag-dot"></div>
-                        </div>
-                        <div class="q-drag-dot-row">
-                            <div class="q-drag-dot"></div>
-                            <div class="q-drag-dot"></div>
-                        </div>
-                        <div class="q-drag-dot-row">
-                            <div class="q-drag-dot"></div>
-                            <div class="q-drag-dot"></div>
-                        </div>
-                    </div>
-                    <span class="q-number-badge">Question ${index + 1}</span>
+                    <span class="q-number-badge">${question.type === "header" ? "Header Element" : `Question ${pageIdx + 1}`}</span>
                 </div>
                 <div class="q-reorder-actions">
-                    <button class="q-reorder-btn q-move-up-btn" title="Move Up" ${index === 0 ? "disabled" : ""}>
+                    <button class="q-reorder-btn q-move-up-btn" title="Move Up" type="button" ${pageIdx === 0 ? "disabled" : ""}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
                     </button>
-                    <button class="q-reorder-btn q-move-down-btn" title="Move Down" ${index === activeForm.questions.length - 1 ? "disabled" : ""}>
+                    <button class="q-reorder-btn q-move-down-btn" title="Move Down" type="button" ${pageIdx === pageQuestions.length - 1 ? "disabled" : ""}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                 </div>
@@ -872,7 +961,7 @@ function renderQuestionsEditorList() {
             
             <div class="q-header-row">
                 <div class="form-group q-label-input">
-                    <label class="form-label">Question Label</label>
+                    <label class="form-label">${question.type === "header" ? "Header Text" : "Question Label"}</label>
                     <input type="text" class="input-text q-label-input-field" value="${escapeHTML(question.label)}">
                 </div>
                 <div class="form-group">
@@ -885,15 +974,17 @@ function renderQuestionsEditorList() {
                         <option value="checkbox" ${question.type === "checkbox" ? "selected" : ""}>Checkboxes</option>
                         <option value="select" ${question.type === "select" ? "selected" : ""}>Dropdown</option>
                         <option value="date" ${question.type === "date" ? "selected" : ""}>Date</option>
+                        <option value="header" ${question.type === "header" ? "selected" : ""}>Header / Section Title</option>
+                        <option value="file" ${question.type === "file" ? "selected" : ""}>File Upload</option>
                     </select>
                 </div>
             </div>
             
-            ${["text", "paragraph", "number"].includes(question.type) ? `
+            ${["text", "paragraph", "number", "header"].includes(question.type) ? `
             <div class="q-placeholder-row" style="margin-bottom: 12px; margin-top: -4px;">
                 <div class="form-group">
-                    <label class="form-label" style="font-size:0.75rem;">Placeholder Text</label>
-                    <input type="text" class="input-text q-placeholder-input-field" style="padding: 6px 12px; font-size: 0.85rem;" value="${escapeHTML(question.placeholder || '')}" placeholder="e.g. Enter your answer here">
+                    <label class="form-label" style="font-size:0.75rem;">${question.type === "header" ? "Subtitle / Description" : "Placeholder Text"}</label>
+                    <input type="text" class="input-text q-placeholder-input-field" style="padding: 6px 12px; font-size: 0.85rem;" value="${escapeHTML(question.placeholder || '')}" placeholder="${question.type === "header" ? "e.g. Please fill out details below" : "e.g. Enter your answer here"}">
                 </div>
             </div>
             ` : ""}
@@ -903,27 +994,61 @@ function renderQuestionsEditorList() {
             
             <div class="q-footer-row" style="display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; align-items:center; gap:12px;">
-                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
-                        <input type="checkbox" class="q-required-check" ${question.required ? "checked" : ""}> Required
-                    </label>
+                    ${question.type !== "header" ? `
+                    <button class="q-required-toggle-btn icon-btn" title="Toggle Required Field" type="button">
+                        ${question.required ? 
+                          `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; color: var(--primary-color); display:block;"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>` : 
+                          `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; color: var(--text-color-muted); display:block;"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>`
+                        }
+                    </button>
+                    ` : ""}
                     ${["text", "paragraph", "number"].includes(question.type) ? `
-                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.8rem; color:var(--text-color-secondary);">
                         <input type="checkbox" class="q-val-opt-check" ${(question.validations && question.validations.length > 0) ? "checked" : ""}> Response Validation
                     </label>
                     ` : ""}
                 </div>
-                <div>
-                    <button class="q-delete-btn">Delete</button>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button class="q-duplicate-btn icon-btn" title="Duplicate Card" type="button">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; display:block;">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                    <button class="q-delete-btn icon-btn" title="Delete Card" type="button">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; display:block;">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>
                 </div>
             </div>
         `;
 
         // Card activation highlight on click
         card.addEventListener("click", (e) => {
-            // Do not steal focus if clicking inputs, selects or buttons
             if (["INPUT", "SELECT", "BUTTON", "LABEL", "OPTION", "TEXTAREA"].includes(e.target.tagName)) return;
             document.querySelectorAll(".question-edit-card").forEach(c => c.classList.remove("active"));
             card.classList.add("active");
+        });
+        
+        // Drag events for cards inside rendering
+        card.addEventListener("dragstart", (e) => {
+            e.dataTransfer.setData("text/plain", "reorder-element");
+            e.dataTransfer.setData("card-id", question.id);
+            e.dataTransfer.effectAllowed = "move";
+            setTimeout(() => {
+                card.style.opacity = "0.4";
+            }, 0);
+        });
+        
+        card.addEventListener("dragend", () => {
+            card.style.opacity = "";
+            removeDragPlaceholders();
+            const canvas = document.getElementById("questions-editor-list");
+            if (canvas) canvas.classList.remove("drag-over-active");
         });
         
         // Listeners for Question fields
@@ -943,7 +1068,6 @@ function renderQuestionsEditorList() {
         card.querySelector(".q-type-select").addEventListener("change", (e) => {
             const newType = e.target.value;
             activeForm.questions[index].type = newType;
-            // Initialize dummy choice options if switching to a choice field
             if (["radio", "checkbox", "select"].includes(newType) && (!activeForm.questions[index].options || activeForm.questions[index].options.length === 0)) {
                 activeForm.questions[index].options = ["Option 1", "Option 2"];
             }
@@ -951,21 +1075,35 @@ function renderQuestionsEditorList() {
             updateLivePreview();
         });
         
-        card.querySelector(".q-required-check").addEventListener("change", (e) => {
-            activeForm.questions[index].required = e.target.checked;
-            updateLivePreview();
-        });
+        const reqToggle = card.querySelector(".q-required-toggle-btn");
+        if (reqToggle) {
+            reqToggle.addEventListener("click", (e) => {
+                e.stopPropagation();
+                activeForm.questions[index].required = !activeForm.questions[index].required;
+                renderQuestionsEditorList();
+                updateLivePreview();
+            });
+        }
         
-        card.querySelector(".q-delete-btn").addEventListener("click", () => {
-            activeForm.questions[index].deleted = true; // Temporary flag or splice
+        const dupBtn = card.querySelector(".q-duplicate-btn");
+        if (dupBtn) {
+            dupBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                duplicateQuestion(index);
+            });
+        }
+        
+        card.querySelector(".q-delete-btn").addEventListener("click", (e) => {
+            e.stopPropagation();
             activeForm.questions.splice(index, 1);
+            normalizeQuestionsOrder();
             renderQuestionsEditorList();
             updateLivePreview();
         });
  
         // Up / Down reordering buttons listeners
         const moveUpBtn = card.querySelector(".q-move-up-btn");
-        if (moveUpBtn && index > 0) {
+        if (moveUpBtn && pageIdx > 0) {
             moveUpBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
                 if (window.isSwapping) return;
@@ -973,8 +1111,8 @@ function renderQuestionsEditorList() {
                 
                 const editorList = document.getElementById("questions-editor-list");
                 const cards = editorList.querySelectorAll(".question-edit-card");
-                const targetCard = cards[index];
-                const siblingCard = cards[index - 1];
+                const targetCard = cards[pageIdx];
+                const siblingCard = cards[pageIdx - 1];
                 
                 if (targetCard && siblingCard) {
                     const targetRect = targetCard.getBoundingClientRect();
@@ -1008,15 +1146,20 @@ function renderQuestionsEditorList() {
                         targetCard.classList.remove("q-swapping");
                         siblingCard.classList.remove("q-swapping");
                         
-                        const temp = activeForm.questions[index];
-                        activeForm.questions[index] = activeForm.questions[index - 1];
-                        activeForm.questions[index - 1] = temp;
+                        const temp = pageQuestions[pageIdx];
+                        pageQuestions[pageIdx] = pageQuestions[pageIdx - 1];
+                        pageQuestions[pageIdx - 1] = temp;
                         
+                        pageQuestions.forEach((q, idx) => {
+                            q.order = idx;
+                        });
+                        
+                        normalizeQuestionsOrder();
                         renderQuestionsEditorList();
                         updateLivePreview();
                         
                         const newCards = document.getElementById("questions-editor-list").querySelectorAll(".question-edit-card");
-                        const swappedCard = newCards[index - 1];
+                        const swappedCard = newCards[pageIdx - 1];
                         if (swappedCard) {
                             swappedCard.classList.add("active");
                             swappedCard.classList.add("q-swap-pulse");
@@ -1034,7 +1177,7 @@ function renderQuestionsEditorList() {
         }
         
         const moveDownBtn = card.querySelector(".q-move-down-btn");
-        if (moveDownBtn && index < activeForm.questions.length - 1) {
+        if (moveDownBtn && pageIdx < pageQuestions.length - 1) {
             moveDownBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
                 if (window.isSwapping) return;
@@ -1042,8 +1185,8 @@ function renderQuestionsEditorList() {
                 
                 const editorList = document.getElementById("questions-editor-list");
                 const cards = editorList.querySelectorAll(".question-edit-card");
-                const targetCard = cards[index];
-                const siblingCard = cards[index + 1];
+                const targetCard = cards[pageIdx];
+                const siblingCard = cards[pageIdx + 1];
                 
                 if (targetCard && siblingCard) {
                     const targetRect = targetCard.getBoundingClientRect();
@@ -1077,15 +1220,20 @@ function renderQuestionsEditorList() {
                         targetCard.classList.remove("q-swapping");
                         siblingCard.classList.remove("q-swapping");
                         
-                        const temp = activeForm.questions[index];
-                        activeForm.questions[index] = activeForm.questions[index + 1];
-                        activeForm.questions[index + 1] = temp;
+                        const temp = pageQuestions[pageIdx];
+                        pageQuestions[pageIdx] = pageQuestions[pageIdx + 1];
+                        pageQuestions[pageIdx + 1] = temp;
                         
+                        pageQuestions.forEach((q, idx) => {
+                            q.order = idx;
+                        });
+                        
+                        normalizeQuestionsOrder();
                         renderQuestionsEditorList();
                         updateLivePreview();
                         
                         const newCards = document.getElementById("questions-editor-list").querySelectorAll(".question-edit-card");
-                        const swappedCard = newCards[index + 1];
+                        const swappedCard = newCards[pageIdx + 1];
                         if (swappedCard) {
                             swappedCard.classList.add("active");
                             swappedCard.classList.add("q-swap-pulse");
@@ -1133,12 +1281,10 @@ function renderQuestionsEditorList() {
         if (["text", "paragraph", "number"].includes(question.type)) {
             const hasValidation = question.validations && question.validations.length > 0;
             
-            // Response validation opt-in checkbox in footer
             const valOptCheck = card.querySelector(".q-val-opt-check");
             if (valOptCheck) {
                 valOptCheck.addEventListener("change", (e) => {
                     if (e.target.checked) {
-                        // Initialize validations list with phone check
                         activeForm.questions[index].validations = [{
                             type: "phone",
                             value: "",
@@ -1146,15 +1292,12 @@ function renderQuestionsEditorList() {
                             errorText: getDefaultErrorText("phone", ""),
                             hasCustomSettings: false
                         }];
-                        // Sync legacy fields
                         activeForm.questions[index].validationType = "phone";
                         activeForm.questions[index].validationValue = "";
                         activeForm.questions[index].validationPattern = compileValidationPattern("phone", "");
                         activeForm.questions[index].validationErrorText = getDefaultErrorText("phone", "");
                     } else {
-                        // Clear validations
                         activeForm.questions[index].validations = [];
-                        // Sync legacy fields
                         activeForm.questions[index].validationType = "none";
                         activeForm.questions[index].validationValue = "";
                         activeForm.questions[index].validationPattern = "";
@@ -1166,7 +1309,6 @@ function renderQuestionsEditorList() {
             }
             
             if (hasValidation) {
-                // Add Validation Rule button click
                 const addRuleBtn = card.querySelector(".add-validation-rule-btn");
                 if (addRuleBtn) {
                     addRuleBtn.addEventListener("click", () => {
@@ -1177,7 +1319,6 @@ function renderQuestionsEditorList() {
                             errorText: getDefaultErrorText("phone", ""),
                             hasCustomSettings: false
                         });
-                        // Sync first validation to legacy properties
                         const first = activeForm.questions[index].validations[0];
                         activeForm.questions[index].validationType = first.type;
                         activeForm.questions[index].validationValue = first.value;
@@ -1189,7 +1330,6 @@ function renderQuestionsEditorList() {
                     });
                 }
                 
-                // Rule select dropdown changes
                 card.querySelectorAll(".q-rule-type-select").forEach(sel => {
                     sel.addEventListener("change", (e) => {
                         const ruleIdx = parseInt(e.target.dataset.ruleIdx);
@@ -1204,9 +1344,8 @@ function renderQuestionsEditorList() {
                             rule.value = defaultValue;
                             rule.pattern = compileValidationPattern(type, defaultValue);
                             rule.errorText = getDefaultErrorText(type, defaultValue);
-                            rule.hasCustomSettings = false; // Reset custom settings on type change
+                            rule.hasCustomSettings = false;
                             
-                            // Sync legacy if it's the first rule
                             if (ruleIdx === 0) {
                                 activeForm.questions[index].validationType = rule.type;
                                 activeForm.questions[index].validationValue = rule.value;
@@ -1220,14 +1359,12 @@ function renderQuestionsEditorList() {
                     });
                 });
                 
-                // Rule deletion
                 card.querySelectorAll(".q-rule-delete-btn").forEach(btn => {
                     btn.addEventListener("click", (e) => {
                         const btnEl = e.target.closest(".q-rule-delete-btn");
                         const ruleIdx = parseInt(btnEl.dataset.ruleIdx);
                         activeForm.questions[index].validations.splice(ruleIdx, 1);
                         
-                        // Sync legacy fields
                         if (activeForm.questions[index].validations.length > 0) {
                             const first = activeForm.questions[index].validations[0];
                             activeForm.questions[index].validationType = first.type;
@@ -1246,22 +1383,19 @@ function renderQuestionsEditorList() {
                     });
                 });
                 
-                // Advanced Toggle check
                 card.querySelectorAll(".q-rule-adv-check").forEach(chk => {
                     chk.addEventListener("change", (e) => {
-                        const ruleIdx = parseInt(e.target.dataset.ruleIdx);
+                        const ruleIdx = parseInt(chk.dataset.ruleIdx);
                         const rule = activeForm.questions[index].validations[ruleIdx];
                         if (rule) {
                             rule.hasCustomSettings = e.target.checked;
                             if (!e.target.checked) {
                                 if (rule.type !== "custom") {
-                                    // Restore compiled defaults
                                     const standardPattern = compileValidationPattern(rule.type, rule.value || "");
                                     const standardError = getDefaultErrorText(rule.type, rule.value || "");
                                     rule.pattern = standardPattern;
                                     rule.errorText = standardError;
                                     
-                                    // Sync legacy if it's the first rule
                                     if (ruleIdx === 0) {
                                         activeForm.questions[index].validationPattern = rule.pattern;
                                         activeForm.questions[index].validationErrorText = rule.errorText;
@@ -1274,7 +1408,6 @@ function renderQuestionsEditorList() {
                     });
                 });
                 
-                // Value inputs (starts_with / ends_with value)
                 card.querySelectorAll(".q-rule-val-input").forEach(inp => {
                     inp.addEventListener("input", (e) => {
                         const ruleIdx = parseInt(e.target.dataset.ruleIdx);
@@ -1282,20 +1415,17 @@ function renderQuestionsEditorList() {
                         if (rule) {
                             rule.value = e.target.value;
                             
-                            // Recompile defaults if not in custom mode
                             if (rule.type !== "custom" && !rule.hasCustomSettings) {
                                 rule.pattern = compileValidationPattern(rule.type, rule.value);
                                 rule.errorText = getDefaultErrorText(rule.type, rule.value);
                             }
                             
-                            // Sync legacy if it's the first rule
                             if (ruleIdx === 0) {
                                 activeForm.questions[index].validationValue = rule.value;
                                 activeForm.questions[index].validationPattern = rule.pattern;
                                 activeForm.questions[index].validationErrorText = rule.errorText;
                             }
                             
-                            // Sync sub inputs directly without full re-render for fluid typing feel
                             const ruleCard = inp.closest(".validation-rule-row");
                             const patternInp = ruleCard.querySelector(".q-rule-pattern-input");
                             const errorInp = ruleCard.querySelector(".q-rule-error-input");
@@ -1307,7 +1437,6 @@ function renderQuestionsEditorList() {
                     });
                 });
                 
-                // Length min/max inputs
                 card.querySelectorAll(".q-rule-min-input, .q-rule-max-input").forEach(inp => {
                     inp.addEventListener("input", (e) => {
                         const ruleIdx = parseInt(e.target.dataset.ruleIdx);
@@ -1318,13 +1447,11 @@ function renderQuestionsEditorList() {
                             const maxVal = ruleCard.querySelector(".q-rule-max-input").value;
                             rule.value = `${minVal},${maxVal}`;
                             
-                            // Recompile defaults if not custom
                             if (rule.type !== "custom" && !rule.hasCustomSettings) {
                                 rule.pattern = compileValidationPattern(rule.type, rule.value);
                                 rule.errorText = getDefaultErrorText(rule.type, rule.value);
                             }
                             
-                            // Sync legacy if it's the first rule
                             if (ruleIdx === 0) {
                                 activeForm.questions[index].validationValue = rule.value;
                                 activeForm.questions[index].validationPattern = rule.pattern;
@@ -1341,15 +1468,12 @@ function renderQuestionsEditorList() {
                     });
                 });
                 
-                // Compiled pattern input listener (only custom mode inputs are editable)
                 card.querySelectorAll(".q-rule-pattern-input").forEach(inp => {
                     inp.addEventListener("input", (e) => {
                         const ruleIdx = parseInt(e.target.dataset.ruleIdx);
                         const rule = activeForm.questions[index].validations[ruleIdx];
                         if (rule && (rule.type === "custom" || rule.hasCustomSettings)) {
                             rule.pattern = e.target.value;
-                            
-                            // Sync legacy if it's the first rule
                             if (ruleIdx === 0) {
                                 activeForm.questions[index].validationPattern = rule.pattern;
                             }
@@ -1358,15 +1482,12 @@ function renderQuestionsEditorList() {
                     });
                 });
                 
-                // Error message input listener
                 card.querySelectorAll(".q-rule-error-input").forEach(inp => {
                     inp.addEventListener("input", (e) => {
                         const ruleIdx = parseInt(e.target.dataset.ruleIdx);
                         const rule = activeForm.questions[index].validations[ruleIdx];
                         if (rule) {
                             rule.errorText = e.target.value;
-                            
-                            // Sync legacy if it's the first rule
                             if (ruleIdx === 0) {
                                 activeForm.questions[index].validationErrorText = rule.errorText;
                             }
@@ -1381,24 +1502,42 @@ function renderQuestionsEditorList() {
     });
 }
 
-function addQuestion() {
+function addQuestion(type = "text", label = "New Question") {
     if (!activeForm) return;
     
-    activeForm.questions.push({
+    // If first arg is an Event object, default to 'text'
+    if (type instanceof Event || (type && typeof type === "object" && type.type)) {
+        type = "text";
+        label = "New Question";
+    }
+    
+    // Find the highest order on the active page
+    const samePageQuestions = activeForm.questions.filter(q => (q.page || 1) === activePage);
+    const maxOrder = samePageQuestions.reduce((max, q) => Math.max(max, q.order || 0), -1);
+    const newOrder = maxOrder + 1;
+    
+    const newQuestion = {
         id: generateRandomId(8),
-        type: "text",
-        label: "New Question",
+        type: type,
+        label: label,
         required: false,
-        placeholder: "Type your answer here",
-        options: []
-    });
+        placeholder: ["text", "paragraph", "number", "header"].includes(type) ? "Type subtitle or placeholder here" : "",
+        options: ["radio", "checkbox", "select"].includes(type) ? ["Option 1", "Option 2"] : [],
+        page: activePage,
+        order: newOrder,
+        validations: []
+    };
+    
+    activeForm.questions.push(newQuestion);
     
     renderQuestionsEditorList();
     updateLivePreview();
     
     // Scroll editor to bottom
     const container = document.getElementById("questions-editor-list");
-    container.scrollTop = container.scrollHeight;
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
 }
 
 // =========================================================================
@@ -1784,9 +1923,22 @@ function updateLivePreview() {
     
     // Render Questions HTML
     let questionsHtml = "";
-    activeForm.questions.forEach((q) => {
+    const pageQuestions = activeForm.questions
+        .filter(q => (q.page || 1) === activePage)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    pageQuestions.forEach((q) => {
+        if (q.type === "header") {
+            questionsHtml += `
+                <div class="form-card-base card-style-${branding.cardStyle} section-header-card" style="border-top: 4px solid var(--theme-color); margin-bottom:12px; padding: 18px 20px;">
+                    <h3 style="font-family:'Outfit'; font-size:1.1rem; font-weight:700; margin:0; color:var(--text-color);">${escapeHTML(q.label || "Section Header")}</h3>
+                    ${q.placeholder ? `<p style="font-size:0.8rem; color:var(--text-color-secondary); margin: 4px 0 0 0;">${escapeHTML(q.placeholder)}</p>` : ''}
+                </div>
+            `;
+            return;
+        }
+
         let inputFieldHtml = "";
-        
         switch (q.type) {
             case "text":
                 inputFieldHtml = `<input type="text" class="branded-input" placeholder="${escapeHTML(q.placeholder || 'Your answer')}" disabled>`;
@@ -1831,6 +1983,14 @@ function updateLivePreview() {
             case "date":
                 inputFieldHtml = `<input type="date" class="branded-date" disabled>`;
                 break;
+            case "file":
+                inputFieldHtml = `
+                    <div style="border: 1.5px dashed var(--border-color); padding: 12px; border-radius: var(--border-radius-sm); text-align: center; background: rgba(0,0,0,0.01);">
+                        <span style="font-size: 1.1rem; display: block; margin-bottom: 2px;">📁</span>
+                        <span style="font-size: 0.75rem; color: var(--text-color-secondary);">Select file (Max 10MB)</span>
+                    </div>
+                `;
+                break;
         }
         
         questionsHtml += `
@@ -1856,23 +2016,55 @@ function updateLivePreview() {
         `;
     }
 
-    // Assemble layout
-    previewWrapper.innerHTML = `
-        <div class="form-wrapper ${branding.bannerUrl ? 'has-banner' : ''}">
-            ${inactiveBanner}
-            ${bannerHtml}
+    // Header card rendering based on active page
+    let headerCardHtml = "";
+    if (activePage === 1) {
+        headerCardHtml = `
             <div class="form-card-base card-style-${branding.cardStyle} form-header-card">
                 ${logoHtml}
                 <div class="form-title">${escapeHTML(title)}</div>
                 <div class="form-description">${desc}</div>
             </div>
-            
-            ${questionsHtml}
-            
+        `;
+    } else {
+        headerCardHtml = `
+            <div class="form-card-base card-style-${branding.cardStyle} form-header-card" style="padding: 12px 20px; border-top: 3px solid var(--theme-color);">
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--theme-color);">Page ${activePage} of ${totalPages}</div>
+            </div>
+        `;
+    }
+
+    // Footer buttons rendering based on page count
+    let footerHtml = "";
+    if (totalPages > 1) {
+        footerHtml = `
+            <div class="form-footer" style="margin-top:8px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                ${activePage > 1 ? `<button class="form-clear-btn" style="flex:1; margin:0; padding:8px;" disabled>Back</button>` : ''}
+                <div style="font-size:0.75rem; font-weight:600; color:var(--text-color-secondary); white-space:nowrap;">Page ${activePage} of ${totalPages}</div>
+                <button class="branded-submit-btn" style="background-color: var(--button-color); flex:2; margin:0; padding:8px;" disabled>
+                    ${activePage === totalPages ? 'Submit' : 'Next'}
+                </button>
+            </div>
+        `;
+    } else {
+        footerHtml = `
             <div class="form-footer" style="margin-top:8px;">
                 <button class="branded-submit-btn" style="background-color: var(--button-color)" disabled>Submit</button>
                 <button class="form-clear-btn" disabled>Clear Form</button>
             </div>
+        `;
+    }
+
+    // Assemble layout
+    previewWrapper.innerHTML = `
+        <div class="form-wrapper ${branding.bannerUrl ? 'has-banner' : ''}">
+            ${inactiveBanner}
+            ${bannerHtml}
+            ${headerCardHtml}
+            
+            ${questionsHtml}
+            
+            ${footerHtml}
             
             <div class="branding-credit">
                 Made By <a href="https://prince-sanchela.vercel.app" target="_blank" style="color:var(--theme-color); text-decoration:none; font-weight:600;">Prince Sanchela</a> Custom Branded Forms
@@ -2183,4 +2375,395 @@ async function copyShareUrlToClipboard() {
             copyBtn.innerText = "Copy Link";
         }, 2000);
     }
+}
+
+// =========================================================================
+// PAGINATION & DRAG-AND-DROP WORKSPACE HELPERS
+// =========================================================================
+
+function normalizeQuestionsOrder() {
+    if (!activeForm || !activeForm.questions) return;
+    
+    // Default any missing page/order parameters
+    activeForm.questions.forEach((q, idx) => {
+        if (q.page === undefined || q.page === null) q.page = 1;
+        if (q.order === undefined || q.order === null) q.order = idx;
+    });
+    
+    // Sort questions list globally by page and order
+    activeForm.questions.sort((a, b) => {
+        if (a.page !== b.page) {
+            return (a.page || 1) - (b.page || 1);
+        }
+        return (a.order || 0) - (b.order || 0);
+    });
+    
+    // Re-assign contiguous orders within each page
+    let pageOrders = {};
+    activeForm.questions.forEach(q => {
+        const p = q.page || 1;
+        if (pageOrders[p] === undefined) {
+            pageOrders[p] = 0;
+        }
+        q.order = pageOrders[p]++;
+    });
+}
+
+function duplicateQuestion(idx) {
+    if (!activeForm || !activeForm.questions) return;
+    const original = activeForm.questions[idx];
+    if (!original) return;
+    
+    // Deep clone the question object
+    const copy = JSON.parse(JSON.stringify(original));
+    copy.id = generateRandomId(8);
+    
+    // Position the copy right after the original
+    const pageVal = original.page || 1;
+    activeForm.questions.forEach(q => {
+        if ((q.page || 1) === pageVal && (q.order || 0) > (original.order || 0)) {
+            q.order = (q.order || 0) + 1;
+        }
+    });
+    copy.order = (original.order || 0) + 1;
+    
+    activeForm.questions.push(copy);
+    normalizeQuestionsOrder();
+    renderQuestionsEditorList();
+    updateLivePreview();
+}
+
+function renderPagesTabs() {
+    const container = document.getElementById("builder-pages-tabs");
+    if (!container) return;
+    container.innerHTML = "";
+    
+    if (totalPages < 1) totalPages = 1;
+    
+    for (let p = 1; p <= totalPages; p++) {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = `page-tab-btn ${p === activePage ? 'active' : ''}`;
+        
+        const label = document.createElement("span");
+        label.innerText = `Page ${p}`;
+        tab.appendChild(label);
+        
+        if (totalPages > 1) {
+            const deleteIcon = document.createElement("span");
+            deleteIcon.className = "delete-page-icon";
+            deleteIcon.innerHTML = "&times;";
+            deleteIcon.title = "Delete this page";
+            deleteIcon.addEventListener("click", (e) => {
+                e.stopPropagation();
+                deletePage(p);
+            });
+            tab.appendChild(deleteIcon);
+        }
+        
+        tab.addEventListener("click", () => {
+            activePage = p;
+            renderPagesTabs();
+            renderQuestionsEditorList();
+            updateLivePreview();
+        });
+        
+        container.appendChild(tab);
+    }
+}
+
+function deletePage(pageNum) {
+    if (!confirm(`Are you sure you want to delete Page ${pageNum}? All questions on this page will be deleted permanently.`)) return;
+    
+    // Remove all questions on pageNum
+    activeForm.questions = activeForm.questions.filter(q => (q.page || 1) !== pageNum);
+    
+    // For questions on pages > pageNum, shift page number down by 1
+    activeForm.questions.forEach(q => {
+        const qPage = q.page || 1;
+        if (qPage > pageNum) {
+            q.page = qPage - 1;
+        }
+    });
+    
+    totalPages = Math.max(1, totalPages - 1);
+    
+    if (activePage > totalPages) {
+        activePage = totalPages;
+    } else if (activePage === pageNum) {
+        activePage = Math.min(pageNum, totalPages);
+    }
+    
+    renderPagesTabs();
+    renderQuestionsEditorList();
+    updateLivePreview();
+}
+
+function initDragAndDrop() {
+    const canvas = document.getElementById("questions-editor-list");
+    if (!canvas) return;
+    
+    const toolboxItems = document.querySelectorAll(".toolbox-item");
+    toolboxItems.forEach(item => {
+        // Drag start from toolbox
+        item.addEventListener("dragstart", (e) => {
+            e.dataTransfer.setData("text/plain", "new-element");
+            e.dataTransfer.setData("element-type", item.dataset.type);
+            e.dataTransfer.effectAllowed = "copy";
+        });
+        
+        // Mobile fallback / quick click
+        item.addEventListener("click", () => {
+            const type = item.dataset.type;
+            let label = "New Question";
+            switch (type) {
+                case "header": label = "Header / Section Title"; break;
+                case "text": label = "Text Box"; break;
+                case "paragraph": label = "Text Area"; break;
+                case "select": label = "Dropdown Select"; break;
+                case "radio": label = "Single Choice"; break;
+                case "checkbox": label = "Multiple Choice"; break;
+                case "date": label = "Date Selection"; break;
+                case "file": label = "File Upload"; break;
+            }
+            addQuestion(type, label);
+        });
+    });
+    
+    canvas.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        canvas.classList.add("drag-over-active");
+        
+        const dragOverCard = e.target.closest(".question-edit-card");
+        removeDragPlaceholders();
+        
+        if (dragOverCard) {
+            const rect = dragOverCard.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            
+            const placeholder = document.createElement("div");
+            placeholder.className = "drag-placeholder";
+            
+            if (e.clientY < midpoint) {
+                dragOverCard.before(placeholder);
+            } else {
+                dragOverCard.after(placeholder);
+            }
+        }
+    });
+    
+    canvas.addEventListener("dragleave", (e) => {
+        if (!canvas.contains(e.relatedTarget)) {
+            canvas.classList.remove("drag-over-active");
+            removeDragPlaceholders();
+        }
+    });
+    
+    canvas.addEventListener("drop", (e) => {
+        e.preventDefault();
+        canvas.classList.remove("drag-over-active");
+        
+        const dragType = e.dataTransfer.getData("text/plain");
+        const elementType = e.dataTransfer.getData("element-type");
+        
+        const placeholder = document.querySelector(".drag-placeholder");
+        let dropIndex = -1;
+        
+        const pageQuestions = activeForm.questions
+            .filter(q => (q.page || 1) === activePage)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
+            
+        if (placeholder) {
+            const nextCard = placeholder.nextElementSibling;
+            if (nextCard && nextCard.classList.contains("question-edit-card")) {
+                const nextId = nextCard.dataset.id;
+                dropIndex = pageQuestions.findIndex(q => q.id === nextId);
+            } else {
+                dropIndex = pageQuestions.length;
+            }
+            placeholder.remove();
+        } else {
+            dropIndex = pageQuestions.length;
+        }
+        
+        if (dragType === "new-element") {
+            insertNewQuestionAt(elementType, dropIndex);
+        } else if (dragType === "reorder-element") {
+            const dragCardId = e.dataTransfer.getData("card-id");
+            reorderQuestionTo(dragCardId, dropIndex);
+        }
+    });
+}
+
+function removeDragPlaceholders() {
+    document.querySelectorAll(".drag-placeholder").forEach(el => el.remove());
+}
+
+function insertNewQuestionAt(type, pageDropIndex) {
+    if (!activeForm) return;
+    
+    const pageQuestions = activeForm.questions
+        .filter(q => (q.page || 1) === activePage)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+        
+    let label = "New Question";
+    switch (type) {
+        case "header": label = "Header / Section Title"; break;
+        case "text": label = "Text Box"; break;
+        case "paragraph": label = "Text Area"; break;
+        case "select": label = "Dropdown Select"; break;
+        case "radio": label = "Single Choice"; break;
+        case "checkbox": label = "Multiple Choice"; break;
+        case "date": label = "Date Selection"; break;
+        case "file": label = "File Upload"; break;
+    }
+    
+    const newQuestion = {
+        id: generateRandomId(8),
+        type: type,
+        label: label,
+        required: false,
+        placeholder: ["text", "paragraph", "number", "header"].includes(type) ? "Type subtitle or placeholder here" : "",
+        options: ["radio", "checkbox", "select"].includes(type) ? ["Option 1", "Option 2"] : [],
+        page: activePage,
+        order: 0,
+        validations: []
+    };
+    
+    pageQuestions.splice(pageDropIndex, 0, newQuestion);
+    
+    pageQuestions.forEach((q, idx) => {
+        q.order = idx;
+    });
+    
+    activeForm.questions.push(newQuestion);
+    
+    normalizeQuestionsOrder();
+    renderQuestionsEditorList();
+    updateLivePreview();
+}
+
+function reorderQuestionTo(cardId, pageDropIndex) {
+    if (!activeForm) return;
+    
+    const dragQuestion = activeForm.questions.find(q => q.id === cardId);
+    if (!dragQuestion) return;
+    
+    const pageQuestions = activeForm.questions
+        .filter(q => (q.page || 1) === activePage && q.id !== cardId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+        
+    pageQuestions.splice(pageDropIndex, 0, dragQuestion);
+    
+    pageQuestions.forEach((q, idx) => {
+        q.order = idx;
+    });
+    
+    normalizeQuestionsOrder();
+    renderQuestionsEditorList();
+    updateLivePreview();
+}
+
+function checkFirstTimeVisit() {
+    const visited = localStorage.getItem("princeform_visited");
+    const wrapper = document.querySelector(".dashboard-wrapper-split");
+    
+    if (visited === "true") {
+        if (wrapper) wrapper.classList.add("hide-marketing");
+    } else {
+        if (wrapper) wrapper.classList.remove("hide-marketing");
+    }
+}
+
+function loadDemoForm() {
+    const demoForm = {
+        title: "Demo Contact & Survey Form",
+        description: "Explore the advanced drag-and-drop elements and rules of PrinceForm.",
+        branding: {
+            themeColor: "#2563eb",
+            backgroundColor: "#f0f4f8",
+            textColor: "#1e293b",
+            buttonColor: "#2563eb",
+            fontFamily: "Outfit",
+            logoUrl: "",
+            bannerUrl: "",
+            cardStyle: "elevated"
+        },
+        questions: [
+            {
+                id: generateRandomId(8),
+                type: "header",
+                label: "Personal Information",
+                placeholder: "Let's start with your details.",
+                required: false,
+                options: [],
+                page: 1,
+                order: 0,
+                validations: []
+            },
+            {
+                id: generateRandomId(8),
+                type: "text",
+                label: "What is your full name?",
+                placeholder: "Enter your first and last name",
+                required: true,
+                options: [],
+                page: 1,
+                order: 1,
+                validations: []
+            },
+            {
+                id: generateRandomId(8),
+                type: "radio",
+                label: "How did you hear about us?",
+                placeholder: "",
+                required: false,
+                options: ["Social Media", "Search Engine", "Friend Referral", "Other"],
+                page: 1,
+                order: 2,
+                validations: []
+            },
+            {
+                id: generateRandomId(8),
+                type: "header",
+                label: "Feedback details",
+                placeholder: "Next, tell us about your experience.",
+                required: false,
+                options: [],
+                page: 2,
+                order: 0,
+                validations: []
+            },
+            {
+                id: generateRandomId(8),
+                type: "file",
+                label: "Upload your logo or resume",
+                placeholder: "",
+                required: false,
+                options: [],
+                page: 2,
+                order: 1,
+                validations: []
+            }
+        ],
+        acceptingResponses: true,
+        confirmationMessage: "Thank you! Your demo submission was simulated successfully.",
+        showSubmitAnother: true,
+        customRedirectUrl: "",
+        customRedirectLabel: "",
+        successIcon: "star",
+        successLayout: "splash",
+        successDescription: "You've successfully explored the PrinceForm dynamic multi-page preview!",
+        successButtons: [],
+        successSteps: [],
+        showSocialShare: true
+    };
+
+    activeForm = demoForm;
+    isEditing = false;
+    totalPages = 2;
+    activePage = 1;
+    setupBuilderWorkspace();
+    switchTab("builder");
 }
