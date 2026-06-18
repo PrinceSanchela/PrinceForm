@@ -40,6 +40,8 @@ class QuestionModel(BaseModel):
     validationPattern: Optional[str] = ""
     validationErrorText: Optional[str] = ""
     validations: List[ValidationRuleModel] = []
+    page: int = 1
+    order: int = 0
 
 class UserModel(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
