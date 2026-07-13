@@ -1038,3 +1038,8 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Failed to save uploaded file.")
         
     return {"url": f"/static/uploads/{filename}"}
+
+@app.get("/api/health")
+async def health_check():
+    """Lightweight endpoint for keep-alive pings and cron health checks."""
+    return {"status": "ok"}
