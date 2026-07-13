@@ -1039,6 +1039,7 @@ async def upload_file(file: UploadFile = File(...)):
         
     return {"url": f"/static/uploads/{filename}"}
 
+@app.get("/health")
 @app.get("/api/health")
 async def health_check():
     """Lightweight endpoint for keep-alive pings and cron health checks."""
