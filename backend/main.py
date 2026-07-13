@@ -1,19 +1,24 @@
 import os
 import logging
+import smtplib
+import random
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from contextlib import asynccontextmanager
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
 import secrets
 import re
 
-from fastapi import FastAPI, Request, HTTPException, status, UploadFile, File, Response
+from fastapi import FastAPI, Request, HTTPException, status, UploadFile, File, Response, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import db
-from .models import FormModel, ResponseModel, UserModel
+from .models import FormModel, ResponseModel, UserModel, ResetCodeModel
+from .config import settings
 
 is_prod = os.getenv("ENV") == "production"
 
@@ -38,6 +43,147 @@ def verify_password(password: str, hashed_password: str) -> bool:
         return db_hash.hex() == hash_hex
     except Exception:
         return False
+
+def send_smtp_reset_email(to_email: str, code: str):
+    """Send a password reset email using SMTP credentials. Falls back to logging if unconfigured."""
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        logger.warning(f"[MOCK MAIL] SMTP is not configured. Reset code for {to_email}: {code}")
+        return
+        
+    try:
+        # Create message container
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "Reset your Prince Form Password"
+        msg['From'] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_USER}>"
+        msg['To'] = to_email
+        
+        # HTML body template
+        html = f"""
+        <html>
+        <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 30px; margin: 0;">
+            <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 500px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <tr>
+                    <td style="background-color: #0077ff; padding: 24px; text-align: center;">
+                        <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0; font-family: sans-serif;">Prince Form</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 32px 24px; color: #1e293b;">
+                        <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 16px;">Password Reset Request</h2>
+                        <p style="font-size: 15px; line-height: 1.6; margin-bottom: 24px; color: #475569;">
+                            We received a request to reset your account password. Use the verification code below to authorize the change. This code will expire in <strong>10 minutes</strong>.
+                        </p>
+                        
+                        <div style="background-color: #f1f5f9; border-radius: 12px; padding: 18px; text-align: center; margin-bottom: 24px;">
+                            <span style="font-size: 32px; font-weight: 800; color: #0077ff; letter-spacing: 4px; font-family: monospace;">{code}</span>
+                        </div>
+                        
+                        <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin-bottom: 0;">
+                            If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.
+                        </p>
+                        <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin-top: 10px;">
+                            If you have questions, please contact support at <a href="mailto:contact.princeform@gmail.com" style="color: #0077ff; text-decoration: none;">contact.princeform@gmail.com</a>.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="background-color: #f8fafc; padding: 16px 24px; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #94a3b8;">
+                        &copy; 2026 Prince Form. All rights reserved.
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(html, 'html'))
+        
+        # Connect and send
+        if settings.SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10)
+        else:
+            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10)
+            server.starttls()
+            
+        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        server.sendmail(settings.SMTP_USER, to_email, msg.as_string())
+        server.quit()
+        logger.info(f"Successfully sent SMTP verification email to {to_email}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send SMTP email to {to_email}: {str(e)}")
+
+def send_smtp_password_changed_email(to_email: str, username: str):
+    """Send an account security confirmation email when the password is successfully updated. Falls back to logging if unconfigured."""
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        logger.warning(f"[MOCK MAIL] SMTP is not configured. Password changed notification for {to_email}")
+        return
+        
+    try:
+        # Create message container
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "Security Alert: Prince Form Password Changed"
+        msg['From'] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_USER}>"
+        msg['To'] = to_email
+        
+        # HTML body template
+        html = f"""
+        <html>
+        <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 30px; margin: 0;">
+            <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 500px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <tr>
+                    <td style="background-color: #ef4444; padding: 24px; text-align: center;">
+                        <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0; font-family: sans-serif;">Security Alert</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 32px 24px; color: #1e293b;">
+                        <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 16px;">Password Changed Successfully</h2>
+                        <p style="font-size: 15px; line-height: 1.6; margin-bottom: 18px; color: #475569;">
+                            Hi <strong>{username}</strong>,
+                        </p>
+                        <p style="font-size: 15px; line-height: 1.6; margin-bottom: 24px; color: #475569;">
+                            The password for your Prince Form account has been successfully reset.
+                        </p>
+                        
+                        <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+                            <strong style="color: #991b1b; font-size: 14px; display: block; margin-bottom: 4px;">Didn't authorize this change?</strong>
+                            <span style="color: #b91c1c; font-size: 13px; line-height: 1.4; display: block;">
+                                If you did not request this update, please contact support immediately at <a href="mailto:contact.princeform@gmail.com" style="color: #ef4444; text-decoration: underline;">contact.princeform@gmail.com</a> to lock and recover your account.
+                            </span>
+                        </div>
+                        
+                        <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin-bottom: 0;">
+                            This is an automated security notification. For any inquiries, write to us at <a href="mailto:contact.princeform@gmail.com" style="color: #0077ff; text-decoration: none;">contact.princeform@gmail.com</a>.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="background-color: #f8fafc; padding: 16px 24px; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #94a3b8;">
+                        &copy; 2026 Prince Form. All rights reserved.
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(html, 'html'))
+        
+        # Connect and send
+        if settings.SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10)
+        else:
+            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10)
+            server.starttls()
+            
+        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        server.sendmail(settings.SMTP_USER, to_email, msg.as_string())
+        server.quit()
+        logger.info(f"Successfully sent password change security confirmation email to {to_email}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send password change confirmation to {to_email}: {str(e)}")
 
 def check_password_strength(password: str) -> (bool, str):
     if len(password) < 8:
@@ -112,13 +258,36 @@ app = FastAPI(
 )
 
 # CORS configuration
+origins = [org.strip() for org in settings.ALLOWED_ORIGINS.split(",") if org.strip()]
+origins = [org.rstrip("/") for org in origins]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5000/","https://princeform.onrender.com/"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Custom HTTP Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self';"
+    )
+    if is_prod:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
@@ -166,6 +335,21 @@ async def auth_page(request: Request):
     if user_id:
         return RedirectResponse(url="/")
     return templates.TemplateResponse(request=request, name="auth.html")
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_page(request: Request):
+    """Serve the Terms and Conditions page."""
+    return templates.TemplateResponse(request=request, name="terms.html")
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_page(request: Request):
+    """Serve the Privacy Policy page."""
+    return templates.TemplateResponse(request=request, name="privacy.html")
+
+@app.get("/security", response_class=HTMLResponse)
+async def security_page(request: Request):
+    """Serve the Security Guidelines page."""
+    return templates.TemplateResponse(request=request, name="security.html")
 
 @app.get("/form/{form_id}", response_class=HTMLResponse)
 async def form_responder(request: Request, form_id: str):
@@ -240,9 +424,14 @@ async def signup(credentials: Dict[str, str], response: Response):
         raise HTTPException(status_code=503, detail="Database not connected")
     username = credentials.get("username", "").strip()
     password = credentials.get("password", "")
+    email = credentials.get("email", "").strip().lower()
     
-    if not username or not password:
-        raise HTTPException(status_code=400, detail="Username and password are required")
+    if not username or not password or not email:
+        raise HTTPException(status_code=400, detail="Username, email, and password are required")
+        
+    # Validate email format
+    if not re.match(r"^[\w\.-]+@[\w\.-]+\.\w+$", email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address")
         
     # Enforce password strength
     ok, err_msg = check_password_strength(password)
@@ -254,10 +443,16 @@ async def signup(credentials: Dict[str, str], response: Response):
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
         
+    # Check if email is already taken
+    existing_email = await db.db["users"].find_one({"email": email})
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Email is already registered")
+        
     # Create user
     password_hash = hash_password(password)
     user_dict = {
         "username": username,
+        "email": email,
         "password_hash": password_hash,
         "failedAttempts": 0,
         "lockoutUntil": None
@@ -393,6 +588,189 @@ async def logout(request: Request, response: Response):
     response.delete_cookie(key="session_token")
     response.delete_cookie(key="session_user")
     return {"message": "Logged out successfully"}
+
+@app.post("/api/auth/forgot-password")
+async def forgot_password(payload: Dict[str, str], background_tasks: BackgroundTasks):
+    """Generate 6-digit pin and email/log it for password recovery by username or email lookup."""
+    if db.db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+        
+    username_or_email = (payload.get("email") or payload.get("username_or_email") or "").strip()
+    if not username_or_email:
+        raise HTTPException(status_code=400, detail="Username or email address is required")
+        
+    # Search for matching email or username (case-insensitive username)
+    user = await db.db["users"].find_one({
+        "$or": [
+            {"email": username_or_email.lower()},
+            {"username": {"$regex": f"^{re.escape(username_or_email)}$", "$options": "i"}}
+        ]
+    })
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with this username or email address")
+        
+    email = user.get("email", "").strip().lower()
+        
+    # Cool-down check: prevent requesting a code more than once per 60 seconds
+    last_reset = await db.db["password_resets"].find_one({
+        "email": email,
+        "used": False,
+        "expiresAt": {"$gt": datetime.utcnow()}
+    })
+    if last_reset:
+        creation_time = last_reset["expiresAt"] - timedelta(minutes=10)
+        time_elapsed = datetime.utcnow() - creation_time
+        if time_elapsed < timedelta(seconds=60):
+            wait_seconds = 60 - int(time_elapsed.total_seconds())
+            raise HTTPException(
+                status_code=429,
+                detail=f"Please wait {wait_seconds} second(s) before requesting another code."
+            )
+        
+    # Generate 6-digit recovery code
+    code = f"{random.randint(100000, 999999)}"
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    
+    # Store code in DB (and invalidate any existing codes for this email)
+    await db.db["password_resets"].delete_many({"email": email})
+    await db.db["password_resets"].insert_one({
+        "email": email,
+        "code": code,
+        "expiresAt": expires_at,
+        "used": False
+    })
+    
+    # Send code using background tasks to prevent API blocking
+    background_tasks.add_task(send_smtp_reset_email, email, code)
+    
+    # Secure email masking helper
+    def mask_email(email_addr: str) -> str:
+        try:
+            parts = email_addr.split("@")
+            if len(parts) != 2:
+                return "******"
+            name, domain = parts[0], parts[1]
+            masked_name = name[:2] + "***" + name[-1] if len(name) > 2 else name + "***"
+            
+            domain_parts = domain.split(".")
+            if len(domain_parts) >= 2:
+                domain_name = domain_parts[0]
+                domain_suffix = ".".join(domain_parts[1:])
+                masked_domain = domain_name[:2] + "***" + "." + domain_suffix if len(domain_name) > 2 else domain_name + "***." + domain_suffix
+            else:
+                masked_domain = domain
+            return f"{masked_name}@{masked_domain}"
+        except Exception:
+            return "******"
+            
+    masked_email = mask_email(email)
+    
+    # Prepare response payload
+    resp = {
+        "message": f"Verification code sent successfully.",
+        "emailHint": masked_email
+    }
+    
+    # Return code in debugCode for mock visual alerts when SMTP is not configured
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        resp["debugCode"] = code
+        
+    return resp
+
+@app.post("/api/auth/reset-password")
+async def reset_password(payload: Dict[str, str], background_tasks: BackgroundTasks):
+    """Validate 6-digit verification code and reset password."""
+    if db.db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+        
+    username_or_email = (payload.get("email") or payload.get("username_or_email") or "").strip()
+    code = payload.get("code", "").strip()
+    new_password = payload.get("newPassword", "")
+    
+    if not username_or_email or not code or not new_password:
+        raise HTTPException(status_code=400, detail="Username/email, code, and new password are required")
+        
+    # Enforce password strength
+    ok, err_msg = check_password_strength(new_password)
+    if not ok:
+        raise HTTPException(status_code=400, detail=err_msg)
+        
+    # Find user by username or email first
+    user = await db.db["users"].find_one({
+        "$or": [
+            {"email": username_or_email.lower()},
+            {"username": {"$regex": f"^{re.escape(username_or_email)}$", "$options": "i"}}
+        ]
+    })
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with this username or email address")
+        
+    email = user.get("email", "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="No recovery email is configured for this account.")
+        
+    # Verify the reset code exists and matches
+    reset_record = await db.db["password_resets"].find_one({
+        "email": email,
+        "code": code,
+        "used": False
+    })
+    if not reset_record:
+        # Check if there is an active, unused code for this email to track guess attempts
+        active_reset = await db.db["password_resets"].find_one({
+            "email": email,
+            "used": False,
+            "expiresAt": {"$gt": datetime.utcnow()}
+        })
+        if active_reset:
+            current_failures = active_reset.get("failedAttempts", 0) + 1
+            if current_failures >= 5:
+                await db.db["password_resets"].update_one(
+                    {"_id": active_reset["_id"]},
+                    {"$set": {"used": True}}
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Too many failed attempts. This verification code has been invalidated. Please request a new one."
+                )
+            else:
+                await db.db["password_resets"].update_one(
+                    {"_id": active_reset["_id"]},
+                    {"$set": {"failedAttempts": current_failures}}
+                )
+                attempts_left = 5 - current_failures
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid verification code. {attempts_left} attempt(s) remaining before this code is invalidated."
+                )
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
+        
+    if datetime.utcnow() > reset_record["expiresAt"]:
+        raise HTTPException(status_code=400, detail="Verification code has expired")
+        
+    # Hash new password and update user record
+    password_hash = hash_password(new_password)
+    await db.db["users"].update_one(
+        {"_id": user["_id"]},
+        {"$set": {
+            "password_hash": password_hash,
+            "failedAttempts": 0,
+            "lockoutUntil": None
+        }}
+    )
+    
+    # Mark reset code as used
+    await db.db["password_resets"].update_one(
+        {"_id": reset_record["_id"]},
+        {"$set": {"used": True}}
+    )
+    
+    # Send transactional password change confirmation email
+    background_tasks.add_task(send_smtp_password_changed_email, email, user["username"])
+    
+    return {"message": "Password reset successfully. You can now log in."}
 
 # =========================================================================
 # FORM MANAGEMENT API
