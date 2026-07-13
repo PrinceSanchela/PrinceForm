@@ -46,9 +46,17 @@ class QuestionModel(BaseModel):
 class UserModel(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
     username: str
+    email: Optional[str] = None
     password_hash: str
     failedAttempts: int = 0
     lockoutUntil: Optional[datetime] = None
+
+class ResetCodeModel(BaseModel):
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+    email: str
+    code: str
+    expiresAt: datetime
+    used: bool = False
 
 class FormModel(BaseModel):
     id: str = Field(default_factory=generate_short_id)
