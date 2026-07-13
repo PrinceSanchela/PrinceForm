@@ -21,8 +21,28 @@ class DatabaseHelper:
             
             # Ensure indexes for fast queries
             await self.db["forms"].create_index("createdAt")
+            await self.db["forms"].create_index([("userId", 1), ("createdAt", -1)])
+            
             await self.db["responses"].create_index("formId")
             await self.db["responses"].create_index("submittedAt")
+            
+            # Unique user indices for fast lookup queries
+            try:
+                await self.db["users"].create_index("username", unique=True)
+            except Exception:
+                logger.warning("Could not create unique index on users.username, possibly due to existing duplicates.")
+                await self.db["users"].create_index("username")
+
+            try:
+                await self.db["users"].create_index("email", unique=True)
+            except Exception:
+                logger.warning("Could not create unique index on users.email, possibly due to existing duplicates.")
+                await self.db["users"].create_index("email")
+            
+            # TTL indexes to automatically prune expired sessions and recovery codes
+            await self.db["sessions"].create_index("createdAt", expireAfterSeconds=30*24*60*60)
+            await self.db["password_resets"].create_index("expiresAt", expireAfterSeconds=0)
+            await self.db["password_resets"].create_index("email")
             
         except Exception as e:
             logger.error(f"Error connecting to MongoDB: {str(e)}")

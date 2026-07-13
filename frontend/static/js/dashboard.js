@@ -1581,23 +1581,27 @@ function setupBrandingListeners() {
         try {
             if (textNode) textNode.nodeValue = "Uploading... ";
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                textInp.value = e.target.result;
-                updateBrandingState();
-                if (textNode) textNode.nodeValue = "Upload ";
-                fileInp.value = "";
-            };
-            reader.onerror = function(err) {
-                console.error("FileReader error:", err);
-                alert("Error reading file");
-                if (textNode) textNode.nodeValue = "Upload ";
-                fileInp.value = "";
-            };
-            reader.readAsDataURL(file);
+            const formData = new FormData();
+            formData.append("file", file);
+            
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData
+            });
+            
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.detail || "Upload failed");
+            }
+            
+            textInp.value = data.url;
+            updateBrandingState();
+            if (textNode) textNode.nodeValue = "Upload ";
+            fileInp.value = "";
+            
         } catch (err) {
-            console.error("FileReader error:", err);
-            alert("Error reading file: " + err.message);
+            console.error("Image upload error:", err);
+            alert("Error uploading file: " + err.message);
             if (textNode) textNode.nodeValue = "Upload ";
             fileInp.value = "";
         }
