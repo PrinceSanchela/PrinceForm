@@ -7,10 +7,11 @@
     <!-- Base Stylesheet references -->
     <link rel="stylesheet" href="/static/css/common.css">
     <link rel="stylesheet" href="/static/css/form.css">
+    <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico">
     
     <!-- Dynamic Google Font Import based on Branding configurations -->
     {% if form.branding.fontFamily in ['Inter', 'Outfit', 'Roboto'] %}
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ form.branding.fontFamily }}:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ form.branding.fontFamily }}:wght@300;400;500;600;700&amp;display=swap">
     {% endif %}
     
     <!-- Inline variables overrides -->
@@ -44,13 +45,8 @@
             <input type="hidden" id="form-success-layout-hidden" value="{{ form.successLayout or 'classic' }}">
             <div id="form-success-desc-html" style="display:none;">{{ (form.successDescription or '') | safe }}</div>
             <input type="hidden" id="form-success-share-hidden" value="{{ 'true' if form.showSocialShare else 'false' }}">
-            
-            <script type="application/json" id="form-success-buttons-json">
-                {{ (form.successButtons or []) | tojson | safe }}
-            </script>
-            <script type="application/json" id="form-success-steps-json">
-                {{ (form.successSteps or []) | tojson | safe }}
-            </script>
+            <input type="hidden" id="form-success-buttons-json" value="{{ (form.successButtons or []) | tojson | escape }}">
+            <input type="hidden" id="form-success-steps-json" value="{{ (form.successSteps or []) | tojson | escape }}">
             
             <div class="form-card-base card-style-{{ form.branding.cardStyle }} form-header-card animate-fade-in">
                 <!-- Custom logo image if exists -->
@@ -69,7 +65,7 @@
                  data-q-id="{{ q.id }}" 
                  data-q-type="{{ q.type }}"
                  data-q-page="{{ q.page or 1 }}"
-                 style="border-top: 4px solid var(--theme-color); animation-delay: {{ loop.index * 0.05 }}s">
+                 style="border-top: 4px solid var(--theme-color);">
                 <h3 style="font-family:'Outfit'; font-size:1.25rem; font-weight:700; margin:0; color:var(--text-color);">{{ q.label }}</h3>
                 {% if q.placeholder %}
                 <p style="font-size:0.85rem; color:var(--text-color-secondary); margin: 6px 0 0 0;">{{ q.placeholder }}</p>
@@ -84,8 +80,7 @@
                  data-q-val-type="{{ q.validationType or 'none' }}"
                  data-q-val-pattern="{{ q.validationPattern or '' }}"
                  data-q-val-error="{{ q.validationErrorText or '' }}"
-                 data-q-validations='{{ (q.validations or []) | tojson | safe }}'
-                 style="animation-delay: {{ loop.index * 0.05 }}s">
+                 data-q-validations="{{ (q.validations or []) | tojson | escape }}">
                 
                 <div class="question-label">
                     {{ q.label }}
@@ -150,7 +145,7 @@
             {% endfor %}
             
             <!-- Submission Controls -->
-            <div class="form-footer animate-fade-in" style="animation-delay: {{ (form.questions|length + 1) * 0.05 }}s">
+            <div class="form-footer animate-fade-in">
                 <button type="submit" class="branded-submit-btn" id="btn-submit-form">Submit</button>
                 <button type="button" class="form-clear-btn" id="btn-clear-form">Clear Form</button>
             </div>

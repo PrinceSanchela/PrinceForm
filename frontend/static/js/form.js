@@ -31,14 +31,22 @@ function initFormResponder() {
     // Set up file input listeners
     setupFileInputEvents();
     
-    // Determine total pages from DOM cards
+    // Determine total pages and assign cascade animation delays
     const cards = document.querySelectorAll(".question-card");
     const pages = new Set();
-    cards.forEach(card => {
+    cards.forEach((card, idx) => {
         const p = parseInt(card.dataset.qPage) || 1;
         pages.add(p);
+        // Set cascade fade-in animation delay
+        card.style.animationDelay = `${(idx + 1) * 0.05}s`;
     });
     totalResponderPages = pages.size > 0 ? Math.max(...pages) : 1;
+    
+    // Set cascade animation delay for the footer
+    const footer = document.querySelector(".form-footer");
+    if (footer) {
+        footer.style.animationDelay = `${(cards.length + 1) * 0.05}s`;
+    }
     
     if (totalResponderPages > 1) {
         setupResponderPagination();
@@ -481,7 +489,10 @@ function renderSuccessView() {
     let ctaBtns = [];
     try {
         const btnsJson = document.getElementById("form-success-buttons-json");
-        if (btnsJson) ctaBtns = JSON.parse(btnsJson.textContent.trim());
+        if (btnsJson) {
+            const rawVal = btnsJson.value !== undefined ? btnsJson.value : btnsJson.textContent.trim();
+            ctaBtns = JSON.parse(rawVal);
+        }
     } catch(err) {
         console.error("Error parsing CTA buttons JSON:", err);
     }
@@ -489,7 +500,10 @@ function renderSuccessView() {
     let steps = [];
     try {
         const stepsJson = document.getElementById("form-success-steps-json");
-        if (stepsJson) steps = JSON.parse(stepsJson.textContent.trim());
+        if (stepsJson) {
+            const rawVal = stepsJson.value !== undefined ? stepsJson.value : stepsJson.textContent.trim();
+            steps = JSON.parse(rawVal);
+        }
     } catch(err) {
         console.error("Error parsing success steps JSON:", err);
     }
