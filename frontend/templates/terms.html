@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms & Conditions | Prince Form</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico">
+    <style>
+        :root {
+            --primary-color: #0077ff;
+            --primary-hover: #005ce6;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --border-radius: 16px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 10% 20%, rgba(216, 241, 255, 0.46) 0.1%, rgba(255, 255, 255, 0.8) 90.1%);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 800px;
+            padding: 24px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .brand-logo {
+            width: 32px;
+            height: 32px;
+        }
+
+        .brand-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .back-btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .back-btn:hover {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 0 24px 48px 24px;
+            box-sizing: border-box;
+        }
+
+        .doc-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 40px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.25rem;
+            font-weight: 800;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .last-updated {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-top: 28px;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        p, li {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        ul {
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .contact-box {
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 36px;
+            border: 1px solid var(--border-color);
+        }
+
+        .contact-box strong {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+
+        .contact-box a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-box a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <a href="/login" class="brand">
+            <img src="/static/logo.png" alt="Prince Form Logo" class="brand-logo">
+            <span class="brand-name">Prince Form</span>
+        </a>
+        <a href="/login" class="back-btn">Back to Login</a>
+    </header>
+
+    <main class="container">
+        <article class="doc-card">
+            <h1>Terms & Conditions</h1>
+            <div class="last-updated">Last Updated: July 13, 2026</div>
+
+            <p>Welcome to <strong>Prince Form</strong>. By creating an account or using our form builder service, you agree to comply with and be bound by the following Terms & Conditions. Please read them carefully.</p>
+
+            <h2>1. User Registration & Security</h2>
+            <p>To use Prince Form, you must register by creating a secure account. You agree to:</p>
+            <ul>
+                <li>Provide a valid email address and secure password during registration.</li>
+                <li>Maintain the confidentiality of your account credentials.</li>
+                <li>Take responsibility for all activities that occur under your account.</li>
+                <li>Notify us immediately of any unauthorized use or security breaches.</li>
+            </ul>
+
+            <h2>2. User Content & Ownership</h2>
+            <p>You retain full ownership of all structure configurations, questionnaires, styles, logo configurations, and form responses generated using our service. You grant Prince Form the necessary database hosting rights to store, process, and present your forms and responses to users.</p>
+
+            <h2>3. Forbidden Activities</h2>
+            <p>You agree not to use Prince Form to host, distribute, or collect data relating to:</p>
+            <ul>
+                <li>Phishing sites, malware campaigns, or deceptive login overlays.</li>
+                <li>Hate speech, harassment, illegal products, or violating material.</li>
+                <li>Automated bot scraping, spam submissions, or denial of service attacks.</li>
+            </ul>
+
+            <h2>4. Service Discontinuation</h2>
+            <p>Prince Form is currently offered as a free-to-use, open-source portfolio project. We reserve the right to suspend accounts, delete database records, or terminate service hosting at any time to prevent service abuse or database exhaustions.</p>
+
+            <h2>5. Disclaimer & Open-Source License</h2>
+            <p>Prince Form is provided "as is" without warranty of any kind, express or implied. The project codebase is distributed under open-source parameters. Developers/deployers accept full responsibility for their respective deployments and MongoDB configurations.</p>
+
+            <div class="contact-box">
+                <strong>Questions or Support?</strong>
+                If you have inquiries regarding these Terms & Conditions, contact us at: 
+                <a href="mailto:contact.princeform@gmail.com">contact.princeform@gmail.com</a>
+            </div>
+        </article>
+    </main>
+
+</body>
+</html>
