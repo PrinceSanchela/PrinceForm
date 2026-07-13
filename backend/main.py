@@ -178,6 +178,32 @@ async def form_responder(request: Request, form_id: str):
         raise HTTPException(status_code=404, detail="Form not found")
         
     form_doc["id"] = form_doc["_id"]
+    
+    # Safely ensure branding configuration is populated with fallback values for legacy forms
+    if "branding" not in form_doc or not form_doc["branding"]:
+        form_doc["branding"] = {
+            "themeColor": "#673ab7",
+            "backgroundColor": "#f0ebf8",
+            "textColor": "#202124",
+            "buttonColor": "#673ab7",
+            "fontFamily": "Inter",
+            "logoUrl": None,
+            "bannerUrl": None,
+            "cardStyle": "elevated"
+        }
+    else:
+        # Guarantee all individual config keys exist
+        b = form_doc["branding"]
+        if isinstance(b, dict):
+            b.setdefault("themeColor", "#673ab7")
+            b.setdefault("backgroundColor", "#f0ebf8")
+            b.setdefault("textColor", "#202124")
+            b.setdefault("buttonColor", "#673ab7")
+            b.setdefault("fontFamily", "Inter")
+            b.setdefault("logoUrl", None)
+            b.setdefault("bannerUrl", None)
+            b.setdefault("cardStyle", "elevated")
+            
     return templates.TemplateResponse(request=request, name="form_view.html", context={"form": form_doc})
 
 # =========================================================================
