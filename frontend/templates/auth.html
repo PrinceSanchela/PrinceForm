@@ -713,6 +713,78 @@
                 justify-content: center;
             }
         }
+
+        /* Security badge styling */
+        .security-badge {
+            background-color: #f0f7ff;
+            border: 1px solid #e0f2fe;
+            border-radius: 10px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 24px;
+            margin-bottom: 8px;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+        }
+        .security-badge svg {
+            width: 18px;
+            height: 18px;
+            color: var(--primary-color);
+            flex-shrink: 0;
+        }
+        .security-badge span {
+            font-size: 0.76rem;
+            color: #0369a1;
+            line-height: 1.4;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        /* Legal links footer styling */
+        .legal-footer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 28px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 16px;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+        }
+        .legal-footer-link {
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+            cursor: pointer !important;
+        }
+        .legal-footer-link:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+        .legal-footer-divider {
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background-color: var(--text-secondary);
+            opacity: 0.4;
+        }
+
+        /* Resend Code Link style */
+        .resend-link-active {
+            color: var(--primary-color) !important;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer !important;
+        }
+        .resend-link-active:hover {
+            text-decoration: underline !important;
+            color: var(--primary-hover) !important;
+        }
     </style>
 </head>
 <body>
@@ -825,34 +897,64 @@
         <!-- Right Side: Clean Form Container -->
         <div class="auth-form-side">
             
-            <!-- Switch Actions Row -->
-            <div class="form-header-row">
-                <h2 class="form-title" id="form-title">Log In</h2>
-                <div class="form-tab-link-wrapper">
-                    <span class="tab-helper-text" id="tab-helper-text">Don't have an account?</span>
-                    <a href="javascript:void(0)" class="tab-toggle-link" id="tab-toggle-link" onclick="toggleAuthMode()">Create an account</a>
+        <!-- Switch Actions Row -->
+        <div class="form-header-row">
+            <h2 class="form-title" id="form-title">Log In</h2>
+            <div class="form-tab-link-wrapper">
+                <span class="tab-helper-text" id="tab-helper-text">Don't have an account?</span>
+                <a href="javascript:void(0)" class="tab-toggle-link" id="tab-toggle-link" onclick="switchMode('signup')">Create an account</a>
+            </div>
+        </div>
+        
+        <p class="form-subtitle" id="form-subtitle">It will take less than a minute.</p>
+        
+        <form class="auth-form-element" onsubmit="handleAuthSubmit(event)">
+            
+            <!-- Username Underline Box -->
+            <div class="form-group" id="username-group">
+                <label class="form-label" for="username">Username</label>
+                <div class="underline-input-wrapper">
+                    <input type="text" class="underline-input" id="username" required placeholder="Type username..." autocomplete="username">
+                    <span class="input-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                        </svg>
+                    </span>
                 </div>
             </div>
-            <p class="form-subtitle" id="form-subtitle">It will take less than a minute.</p>
-            
-            <!-- Submit Form -->
-            <form class="auth-form" id="auth-submit-form" onsubmit="handleAuthSubmit(event)">
-                
-                <!-- Username Underline Box -->
-                <div class="form-group">
-                    <label class="form-label" for="username">Username</label>
-                    <div class="underline-input-wrapper">
-                        <input type="text" class="underline-input" id="username" required placeholder="Type username..." autocomplete="username">
-                        <span class="input-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                            </svg>
-                        </span>
-                    </div>
+
+            <!-- Email Underline Box (Signup & Forgot only) -->
+            <div class="form-group" id="email-group" style="display: none;">
+                <label class="form-label" for="email">Email Address</label>
+                <div class="underline-input-wrapper">
+                    <input type="email" class="underline-input" id="email" placeholder="Type email..." autocomplete="email">
+                    <span class="input-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25 2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                        </svg>
+                    </span>
                 </div>
-                
-                <!-- Password Underline Box -->
-                <div class="form-group">
+            </div>
+
+            <!-- Verification Code Underline Box (Reset only) -->
+            <div class="form-group" id="code-group" style="display: none;">
+                <label class="form-label" for="code">Verification Code</label>
+                <div class="underline-input-wrapper">
+                    <input type="text" class="underline-input" id="code" placeholder="Enter 6-digit code..." maxlength="6" autocomplete="off">
+                    <span class="input-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" />
+                        </svg>
+                    </span>
+                </div>
+                <!-- Resend countdown text -->
+                <div class="resend-wrapper" id="resend-wrapper" style="margin-top: 8px; font-size: 0.76rem; color: var(--text-secondary); text-align: right; user-select: none;">
+                    Didn't receive code? <span id="resend-timer-label" style="color: var(--text-primary); font-weight: 600;">Resend in 60s</span>
+                </div>
+            </div>
+            
+            <!-- Password Underline Box -->
+            <div class="form-group" id="password-group">
                     <label class="form-label" for="password">Password</label>
                     <div class="underline-input-wrapper">
                         <input type="password" class="underline-input" id="password" required placeholder="Type password..." autocomplete="current-password">
@@ -909,6 +1011,14 @@
                     </div>
                 </div>
 
+                <!-- Security Badge -->
+                <div class="security-badge" id="security-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
+                    </svg>
+                    <span>Secure Connection Active: Lockout protection, Salted Hashing & Cookie Security enabled.</span>
+                </div>
+
                 <!-- Status alert panel -->
                 <div class="status-msg" id="status-alert"></div>
 
@@ -930,7 +1040,16 @@
                 
                 <!-- Forgot link bottom center -->
                 <div class="forgot-password-wrapper" id="forgot-password-wrapper">
-                    <a href="javascript:void(0)" class="forgot-link">Forget your password?</a>
+                    <a href="javascript:void(0)" class="forgot-link" onclick="switchMode('forgot')">Forget your password?</a>
+                </div>
+
+                <!-- Legal Navigation Footer Links -->
+                <div class="legal-footer">
+                    <a href="/terms" class="legal-footer-link" target="_blank">Terms of Service</a>
+                    <span class="legal-footer-divider"></span>
+                    <a href="/privacy" class="legal-footer-link" target="_blank">Privacy Policy</a>
+                    <span class="legal-footer-divider"></span>
+                    <a href="/security" class="legal-footer-link" target="_blank">Security Guidelines</a>
                 </div>
             </form>
         </div>
@@ -941,6 +1060,80 @@
         const passwordInp = document.getElementById("password");
         const togglePasswordBtn = document.getElementById("toggle-password-visibility");
         const eyeIcon = document.getElementById("eye-icon");
+
+        let resendTimerInterval = null;
+
+        function startResendTimer() {
+            if (resendTimerInterval) {
+                clearInterval(resendTimerInterval);
+            }
+            const label = document.getElementById("resend-timer-label");
+            if (!label) return;
+            
+            let seconds = 60;
+            label.className = "";
+            label.removeAttribute("onclick");
+            label.innerText = `Resend in ${seconds}s`;
+            
+            resendTimerInterval = setInterval(() => {
+                seconds--;
+                if (seconds > 0) {
+                    label.innerText = `Resend in ${seconds}s`;
+                } else {
+                    clearInterval(resendTimerInterval);
+                    resendTimerInterval = null;
+                    label.innerHTML = `<a class="resend-link-active" onclick="triggerResendCode()">Resend Code</a>`;
+                }
+            }, 1000);
+        }
+
+        async function triggerResendCode() {
+            const emailInp = document.getElementById("email").value.trim();
+            const alertBox = document.getElementById("status-alert");
+            if (!emailInp) return;
+            
+            alertBox.style.display = "none";
+            
+            try {
+                const res = await fetch("/api/auth/forgot-password", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: emailInp })
+                });
+                
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || "Resend failed.");
+                }
+                
+                alertBox.className = "status-msg success";
+                const displayHint = data.emailHint ? ` (${data.emailHint})` : "";
+                alertBox.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                    </svg>
+                    <span>New verification code sent successfully${displayHint}.</span>
+                `;
+                alertBox.style.display = "flex";
+                
+                if (data.debugCode) {
+                    showMockEmailToast(data.emailHint || emailInp, data.debugCode);
+                }
+                
+                startResendTimer();
+                
+            } catch (err) {
+                console.error(err);
+                alertBox.className = "status-msg error";
+                alertBox.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <span>${err.message}</span>
+                `;
+                alertBox.style.display = "flex";
+            }
+        }
 
         // Onboarding slides manager for sliding track
         let currentSlide = 0;
@@ -1000,8 +1193,10 @@
             });
         }
 
-        // Toggle state controls (Login <-> SignUp)
-        function toggleAuthMode() {
+        // Unified state controls for Login, Signup, Forgot, and Reset views
+        function switchMode(newMode) {
+            mode = newMode;
+            
             const formTitle = document.getElementById("form-title");
             const tabHelperText = document.getElementById("tab-helper-text");
             const tabToggleLink = document.getElementById("tab-toggle-link");
@@ -1011,35 +1206,146 @@
             const strengthSection = document.getElementById("password-strength-section");
             const rememberMeWrapper = document.getElementById("remember-me-wrapper");
             const forgotPasswordWrapper = document.getElementById("forgot-password-wrapper");
+            const btnSubmit = document.getElementById("btn-submit");
+            const spinner = document.getElementById("btn-spinner");
+            
+            const usernameGroup = document.getElementById("username-group");
+            const emailGroup = document.getElementById("email-group");
+            const codeGroup = document.getElementById("code-group");
+            const passwordGroup = document.getElementById("password-group");
+            
+            // Clear any active resend timers
+            if (resendTimerInterval) {
+                clearInterval(resendTimerInterval);
+                resendTimerInterval = null;
+            }
+
+            // Invalidate spinner and reset fields
+            btnSubmit.disabled = false;
+            spinner.style.display = "none";
             
             // Clear status alert
             alertBox.className = "status-msg";
             alertBox.style.display = "none";
             
+            // Clear password values and visibility
+            passwordInp.value = "";
+            passwordInp.type = "password";
+            if (eyeIcon) {
+                eyeIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                `;
+            }
+            
+            // Reset email label and placeholder
+            const emailLabel = document.querySelector("#email-group .form-label");
+            const emailInput = document.getElementById("email");
+            if (emailLabel) emailLabel.innerText = "Email Address";
+            if (emailInput) {
+                emailInput.placeholder = "Type email...";
+                emailInput.type = "text"; // Default to text to prevent hidden browser validation checks
+            }
+            
+            // Clear input required flags
+            document.getElementById("username").required = false;
+            document.getElementById("email").required = false;
+            document.getElementById("password").required = false;
+            document.getElementById("code").required = false;
+            
             if (mode === "login") {
-                mode = "signup";
-                formTitle.innerText = "Sign Up";
-                tabHelperText.innerText = "Already have an account?";
-                tabToggleLink.innerText = "Log In";
-                formSubtitle.innerText = "It will take less than a minute.";
-                btnText.innerText = "Create Account";
-                
-                strengthSection.style.display = "flex";
-                rememberMeWrapper.style.display = "none";
-                forgotPasswordWrapper.style.display = "none";
-                
-                validatePasswordStrength();
-            } else {
-                mode = "login";
                 formTitle.innerText = "Log In";
+                formSubtitle.innerText = "It will take less than a minute.";
                 tabHelperText.innerText = "Don't have an account?";
                 tabToggleLink.innerText = "Create an account";
-                formSubtitle.innerText = "It will take less than a minute.";
+                tabToggleLink.setAttribute("onclick", "switchMode('signup')");
                 btnText.innerText = "Sign in";
+                
+                usernameGroup.style.display = "block";
+                emailGroup.style.display = "none";
+                codeGroup.style.display = "none";
+                passwordGroup.style.display = "block";
+                
+                document.getElementById("username").required = true;
+                document.getElementById("password").required = true;
                 
                 strengthSection.style.display = "none";
                 rememberMeWrapper.style.display = "flex";
                 forgotPasswordWrapper.style.display = "block";
+            } 
+            else if (mode === "signup") {
+                formTitle.innerText = "Sign Up";
+                formSubtitle.innerText = "It will take less than a minute.";
+                tabHelperText.innerText = "Already have an account?";
+                tabToggleLink.innerText = "Log In";
+                tabToggleLink.setAttribute("onclick", "switchMode('login')");
+                btnText.innerText = "Create Account";
+                
+                usernameGroup.style.display = "block";
+                emailGroup.style.display = "block";
+                codeGroup.style.display = "none";
+                passwordGroup.style.display = "block";
+                
+                document.getElementById("username").required = true;
+                document.getElementById("email").required = true;
+                document.getElementById("password").required = true;
+                
+                // Enforce email format validation only during user signup
+                if (emailInput) emailInput.type = "email";
+                
+                strengthSection.style.display = "flex";
+                rememberMeWrapper.style.display = "none";
+                forgotPasswordWrapper.style.display = "none";
+                validatePasswordStrength();
+            } 
+            else if (mode === "forgot") {
+                formTitle.innerText = "Forgot Password";
+                formSubtitle.innerText = "Enter your username or email to receive a recovery code.";
+                tabHelperText.innerText = "Remember password?";
+                tabToggleLink.innerText = "Back to Login";
+                tabToggleLink.setAttribute("onclick", "switchMode('login')");
+                btnText.innerText = "Send Reset Code";
+                
+                usernameGroup.style.display = "none";
+                emailGroup.style.display = "block";
+                codeGroup.style.display = "none";
+                passwordGroup.style.display = "none";
+                
+                document.getElementById("email").required = true;
+                
+                // Override for recovery search
+                if (emailLabel) emailLabel.innerText = "Username or Email Address";
+                if (emailInput) {
+                    emailInput.placeholder = "Type username or email...";
+                    emailInput.type = "text";
+                }
+                
+                strengthSection.style.display = "none";
+                rememberMeWrapper.style.display = "none";
+                forgotPasswordWrapper.style.display = "none";
+            } 
+            else if (mode === "reset") {
+                formTitle.innerText = "Reset Password";
+                formSubtitle.innerText = "Check your email for the 6-digit verification code.";
+                tabHelperText.innerText = "Cancel recovery?";
+                tabToggleLink.innerText = "Back to Login";
+                tabToggleLink.setAttribute("onclick", "switchMode('login')");
+                btnText.innerText = "Update Password";
+                
+                usernameGroup.style.display = "none";
+                emailGroup.style.display = "none";
+                codeGroup.style.display = "block";
+                passwordGroup.style.display = "block";
+                
+                document.getElementById("code").required = true;
+                document.getElementById("password").required = true;
+                
+                strengthSection.style.display = "flex";
+                rememberMeWrapper.style.display = "none";
+                forgotPasswordWrapper.style.display = "none";
+                validatePasswordStrength();
+                
+                // Start resend countdown
+                startResendTimer();
             }
         }
 
@@ -1086,14 +1392,16 @@
             
             const usernameInp = document.getElementById("username").value.trim();
             const passwordInpVal = passwordInp.value;
+            const emailInp = document.getElementById("email").value.trim().toLowerCase();
+            const codeInp = document.getElementById("code").value.trim();
+            
             const alertBox = document.getElementById("status-alert");
             const btnSubmit = document.getElementById("btn-submit");
             const spinner = document.getElementById("btn-spinner");
             const btnText = document.getElementById("btn-text");
             
-            if (!usernameInp || !passwordInpVal) return;
-            
-            if (mode === "signup" && !validatePasswordStrength()) {
+            // Password strength check on signup / reset modes
+            if ((mode === "signup" || mode === "reset") && !validatePasswordStrength()) {
                 alertBox.className = "status-msg error";
                 alertBox.innerHTML = `
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -1109,36 +1417,87 @@
             btnSubmit.disabled = true;
             spinner.style.display = "inline-block";
             
-            const url = mode === "login" ? "/api/auth/login" : "/api/auth/signup";
+            let url = "";
+            let bodyData = {};
+            
+            if (mode === "login") {
+                url = "/api/auth/login";
+                bodyData = { username: usernameInp, password: passwordInpVal };
+            } else if (mode === "signup") {
+                url = "/api/auth/signup";
+                bodyData = { username: usernameInp, password: passwordInpVal, email: emailInp };
+            } else if (mode === "forgot") {
+                url = "/api/auth/forgot-password";
+                bodyData = { email: emailInp };
+            } else if (mode === "reset") {
+                url = "/api/auth/reset-password";
+                bodyData = { email: emailInp, code: codeInp, newPassword: passwordInpVal };
+            }
             
             try {
                 const res = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        username: usernameInp,
-                        password: passwordInpVal
-                    })
+                    body: JSON.stringify(bodyData)
                 });
                 
                 const data = await res.json();
                 
                 if (!res.ok) {
-                    throw new Error(data.detail || "Authentication failed.");
+                    throw new Error(data.detail || "Request failed.");
                 }
                 
-                alertBox.className = "status-msg success";
-                alertBox.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
-                    </svg>
-                    <span>${mode === "login" ? "Login successful! Redirecting..." : "Registration successful! Loading dashboard..."}</span>
-                `;
-                alertBox.style.display = "flex";
-                
-                setTimeout(() => {
-                    window.location.href = "/";
-                }, 1000);
+                if (mode === "forgot") {
+                    alertBox.className = "status-msg success";
+                    const displayHint = data.emailHint ? ` (${data.emailHint})` : "";
+                    alertBox.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                        </svg>
+                        <span>Verification code sent successfully${displayHint}.</span>
+                    `;
+                    alertBox.style.display = "flex";
+                    
+                    // Show mock toast popup if debug code is returned
+                    if (data.debugCode) {
+                        showMockEmailToast(data.emailHint || emailInp, data.debugCode);
+                    }
+                    
+                    setTimeout(() => {
+                        switchMode('reset');
+                        // Keep the typed username_or_email stored in the field so reset-password knows who we are
+                        document.getElementById("email").value = emailInp;
+                    }, 2000);
+                    
+                } else if (mode === "reset") {
+                    alertBox.className = "status-msg success";
+                    alertBox.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                        </svg>
+                        <span>Password reset successful! Redirecting to login...</span>
+                    `;
+                    alertBox.style.display = "flex";
+                    
+                    setTimeout(() => {
+                        switchMode('login');
+                    }, 1500);
+                    
+                } else {
+                    // Login / Signup success
+                    alertBox.className = "status-msg success";
+                    alertBox.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                        </svg>
+                        <span>${mode === "login" ? "Login successful! Redirecting..." : "Registration successful! Loading dashboard..."}</span>
+                    `;
+                    alertBox.style.display = "flex";
+                    
+                    setTimeout(() => {
+                        window.location.href = "/";
+                    }, 1000);
+                }
                 
             } catch (err) {
                 console.error(err);
@@ -1154,6 +1513,70 @@
                 btnSubmit.disabled = false;
                 spinner.style.display = "none";
             }
+        }
+
+        // Floating mock email notification toast overlay helper
+        function showMockEmailToast(email, code) {
+            const existing = document.getElementById("mock-email-toast");
+            if (existing) existing.remove();
+            
+            const toast = document.createElement("div");
+            toast.id = "mock-email-toast";
+            toast.style.cssText = `
+                position: fixed;
+                top: 24px;
+                right: 24px;
+                background: #0f172a;
+                color: #ffffff;
+                border-radius: 12px;
+                padding: 16px 20px;
+                box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+                z-index: 9999;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                border: 1px solid #1e293b;
+                max-width: 320px;
+                animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                font-family: 'Inter', sans-serif;
+            `;
+            
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.25rem;">📧</span>
+                        <strong style="font-size: 0.9rem; font-weight: 600;">Mock Mail Server</strong>
+                    </div>
+                    <button onclick="document.getElementById('mock-email-toast').remove()" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:1.1rem; padding:0; line-height:1;">&times;</button>
+                </div>
+                <div style="font-size: 0.8rem; color: #94a3b8; line-height: 1.4;">
+                    To: <span style="color:#38bdf8;">${email}</span><br>
+                    Subject: Reset Password Verification
+                </div>
+                <div style="background: #1e293b; border-radius: 6px; padding: 10px; text-align: center; margin-top: 4px;">
+                    <span style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 2px;">Verification Code:</span>
+                    <strong style="font-size: 1.5rem; letter-spacing: 2px; color: #38bdf8; font-family: monospace;">${code}</strong>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            if (!document.getElementById("toast-keyframes")) {
+                const style = document.createElement("style");
+                style.id = "toast-keyframes";
+                style.innerHTML = `
+                    @keyframes slideInRight {
+                        from { transform: translateX(120%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            setTimeout(() => {
+                const el = document.getElementById("mock-email-toast");
+                if (el) el.remove();
+            }, 10000);
         }
 
         // Start slideshow carousel on load
