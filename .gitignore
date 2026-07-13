@@ -19,3 +19,6 @@ frontend/static/uploads/*
 
 forms_links.txt
 server.txt
+
+# Local Administrative / Recovery Scripts
+scripts/admin_reset.py
