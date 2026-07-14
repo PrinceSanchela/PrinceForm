@@ -6,7 +6,7 @@
     <title>Prince Form | Workspace Dashboard</title>
     <!-- Base Stylesheet references -->
     <link rel="stylesheet" href="/static/css/common.css">
-    <link class="cache-buster-css" rel="stylesheet" href="/static/css/dashboard.css?v=2.5">
+    <link class="cache-buster-css" rel="stylesheet" href="/static/css/dashboard.css?v=3.0">
     <link rel="stylesheet" href="/static/css/form.css">
     <link rel="shortcut icon" type="image/x-icon" href="/static/logo.png">
 </head>
@@ -341,8 +341,8 @@
                     <!-- Content Tab Area -->
                     <div class="editor-tab-content active" id="editor-tab-content-area" data-editor-tab-content="content">
                         <!-- Multi-Page Tab Controls -->
-                        <div class="pages-tabs-container" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; background: rgba(0,0,0,0.02); padding: 8px 12px; border-radius: 8px; border: 1px dashed var(--border-color);">
-                            <div class="pages-tabs" id="builder-pages-tabs" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px;">
+                        <div class="pages-tabs-container">
+                            <div class="pages-tabs" id="builder-pages-tabs">
                                 <!-- Populated dynamically -->
                             </div>
                             <button type="button" id="btn-add-page" class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 10px; margin: 0; min-height: unset; height: auto;">+ Add Page</button>
@@ -541,7 +541,7 @@
                     </button>
                     
                     <div class="sidebar-inner-content">
-                        <div style="font-family:'Outfit'; font-size:1.1rem; color:var(--text-color-secondary); margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div class="preview-header">
                             <span>Live Dynamic Preview</span>
                             <div class="preview-toggle-capsule">
                                 <button class="preview-toggle-btn active" id="preview-toggle-form" data-mode="form">Form View</button>
@@ -635,6 +635,6 @@
     </div>
     
     <!-- Script code source -->
-    <script src="/static/js/dashboard.js?v=2.5"></script>
+    <script src="/static/js/dashboard.js?v=3.0"></script>
 </body>
 </html>

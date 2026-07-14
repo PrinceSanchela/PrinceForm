@@ -1838,7 +1838,6 @@ function updateLivePreview() {
     previewWrapper.style.color = branding.textColor;
     previewWrapper.style.fontFamily = `'${branding.fontFamily}', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
     previewWrapper.style.padding = "24px 16px";
-    previewWrapper.style.borderRadius = "12px";
     previewWrapper.style.transition = "all var(--transition-normal)";
     
     // Live Success View Mode Preview overlay
@@ -2023,7 +2022,7 @@ function updateLivePreview() {
             `;
         } else if (successLayout === "splash") {
             successContentHtml = `
-                <div class="success-layout-splash animate-fade-in" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-height: 100%; background: linear-gradient(135deg, var(--theme-color) 0%, var(--button-color) 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; color: #ffffff; padding: 24px; box-sizing: border-box; overflow-y: auto; border-radius: 26px;">
+                <div class="success-layout-splash animate-fade-in" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-height: 100%; background: linear-gradient(135deg, var(--theme-color) 0%, var(--button-color) 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; color: #ffffff; padding: 48px 24px 24px; box-sizing: border-box; overflow-y: auto; border-radius: 26px;">
                     <div class="success-icon-container-splash" style="width: 90px; height: 90px; border-radius: 50%; background-color: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.1); color: #ffffff;">
                         ${getSuccessSVG(successIcon)}
                     </div>

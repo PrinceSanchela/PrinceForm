@@ -4,13 +4,19 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.95.0+-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-4.4+-4ea94b.svg?style=flat&logo=mongodb)](https://www.mongodb.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.9-indigo.svg)](#)
+[![Version](https://img.shields.io/badge/version-3.0-indigo.svg)](#)
 
 Prince Form is an ultra-premium, modern, and highly interactive drag-and-drop web form builder. Designed with a sleek, split-screen SaaS dashboard interface, it allows creators to easily design multi-page forms, configure advanced validation constraints, upload custom branding (logo/banners), preview form links, and monitor submissions in real time.
 
 ---
 
 ## 🚀 Key Features
+
+### ⚡ Performance Optimization & UX Enhancements (v3.0)
+*   **Asynchronous Database Migrations**: Moved legacy unowned forms database updates to background threads, dramatically reducing page load response times from seconds to milliseconds.
+*   **Visual Loading States**: Added a dark spinner style and integrated responsive loading indicators for form lists, edit actions, delete operations, and response databases to prevent duplicate user submissions.
+*   **Live Preview Bezel Corrections**: Fixed the "Vibrant Theme Gradient Splash" layout in the smartphone live preview panel by applying device aspect-ratio height constraints and fixing device bezel curvature styling.
+*   **Cache-Busting Integration**: Updated local asset versions to force browser updates on CSS/JS changes.
 
 ### 🎨 Form Builder Layout Overhaul & Sticky Sidebars (v2.9)
 *   **Collapsible Workspace Panels**: Redesigned the form builder layout with a collapsible left toolbox sidebar and a collapsible right live preview panel, controlled by floating indigo chevron buttons.
