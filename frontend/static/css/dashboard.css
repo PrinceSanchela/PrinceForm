@@ -2161,4 +2161,338 @@
     right: 40px;
 }
 
+/* =========================================================================
+   FORM BUILDER REDESIGN & INDEPENDENT WINDOWS
+   ========================================================================= */
+
+@media (min-width: 1024px) {
+    /* Let card content expand naturally without height locks */
+    .app-card-content.builder-active-mode {
+        height: auto !important;
+        min-height: none !important;
+        overflow: visible !important;
+        display: flex;
+        flex-direction: column;
+        padding-bottom: 24px !important;
+    }
+
+    /* Let builder tab expand naturally */
+    .app-card-content.builder-active-mode #builder-tab.tab-content.active {
+        height: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: visible !important;
+    }
+
+    .builder-layout {
+        display: grid !important;
+        grid-template-columns: var(--left-panel-width, 260px) 1.25fr var(--right-panel-width, 380px) !important;
+        gap: 20px !important;
+        height: auto !important;
+        overflow: visible !important;
+        margin-top: 0px !important;
+        transition: grid-template-columns 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        position: relative !important; /* Context for absolute collapse buttons */
+    }
+
+    /* Collapsing columns states */
+    .builder-layout.left-collapsed {
+        --left-panel-width: 0px;
+    }
+    .builder-layout.right-collapsed {
+        --right-panel-width: 0px;
+    }
+    .builder-layout.left-collapsed.right-collapsed {
+        grid-template-columns: 0px 1fr 0px !important;
+    }
+
+    /* Columns expand naturally and do not show scrollbars */
+    .editor-panel {
+        height: auto !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+        position: relative !important;
+        top: 0 !important;
+        box-sizing: border-box !important;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        border: 1px solid var(--border-color) !important;
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        box-shadow: var(--shadow-md) !important;
+    }
+
+    .toolbox-sidebar, .preview-panel {
+        position: sticky !important;
+        top: 24px !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important; /* Allow absolute collapse buttons to float outside */
+        box-sizing: border-box !important;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        border: 1px solid var(--border-color) !important;
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        box-shadow: var(--shadow-md) !important;
+    }
+
+    /* Left panel: compact items scroll bounds */
+    .toolbox-sidebar .sidebar-inner-content {
+        max-height: calc(100vh - 220px) !important;
+        overflow-y: auto !important;
+        padding-right: 4px;
+        box-sizing: border-box;
+    }
+
+    /* Right panel: Live Preview is taller for realistic phone/tablet layout scale */
+    .preview-panel .sidebar-inner-content {
+        max-height: calc(100vh - 120px) !important;
+        overflow-y: auto !important;
+        padding-right: 4px;
+        box-sizing: border-box;
+    }
+
+    /* Force display on desktop to override max-width: 1300px display: none and override explicit widths */
+    .toolbox-sidebar {
+        display: flex !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-top: 0 !important;
+    }
+    .preview-panel {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-top: 0 !important;
+    }
+
+    /* Left Sidebar Collapsed state adjustments */
+    .builder-layout.left-collapsed .toolbox-sidebar {
+        width: 0px !important;
+        min-width: 0px !important;
+        max-width: 0px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-color: transparent !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+    .builder-layout.left-collapsed .toolbox-sidebar .sidebar-inner-content {
+        display: none !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    /* Right Preview Sidebar Collapsed state adjustments */
+    .builder-layout.right-collapsed .preview-panel {
+        width: 0px !important;
+        min-width: 0px !important;
+        max-width: 0px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-color: transparent !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+    .builder-layout.right-collapsed .preview-panel .sidebar-inner-content {
+        display: none !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+}
+
+/* Scrollbars styling for builder columns */
+.toolbox-sidebar::-webkit-scrollbar,
+.editor-panel::-webkit-scrollbar,
+.preview-panel::-webkit-scrollbar {
+    width: 6px;
+}
+.toolbox-sidebar::-webkit-scrollbar-track,
+.editor-panel::-webkit-scrollbar-track,
+.preview-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+.toolbox-sidebar::-webkit-scrollbar-thumb,
+.editor-panel::-webkit-scrollbar-thumb,
+.preview-panel::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+    border-radius: 4px;
+}
+.toolbox-sidebar::-webkit-scrollbar-thumb:hover,
+.editor-panel::-webkit-scrollbar-thumb:hover,
+.preview-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5);
+}
+
+/* Center Editor Panel Tab Navigation */
+.editor-tabs-nav {
+    display: flex;
+    gap: 12px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+}
+.editor-tab-btn {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all var(--transition-fast) ease;
+}
+.editor-tab-btn:hover {
+    background: rgba(0, 0, 0, 0.03);
+    color: var(--text-color-primary);
+}
+.editor-tab-btn.active {
+    background: rgba(99, 102, 241, 0.08);
+    color: var(--primary-color);
+}
+
+/* Mobile responsive builder navigation */
+.mobile-builder-nav {
+    display: none;
+    gap: 8px;
+    margin-bottom: 16px;
+    background: rgba(0, 0, 0, 0.02);
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+.m-builder-tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 8px;
+    border-radius: 8px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all var(--transition-fast) ease;
+}
+
+/* Floating Sidebar Collapse Button Tab */
+.sidebar-collapse-btn {
+    position: absolute;
+    top: 24px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 120;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--primary-color);
+    padding: 0;
+    pointer-events: auto !important; /* always clickable */
+}
+.sidebar-collapse-btn:hover {
+    color: #ffffff;
+    background: var(--primary-color);
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.3);
+    border-color: var(--primary-color);
+    transform: scale(1.1);
+}
+.sidebar-collapse-btn.left-btn {
+    right: -16px !important;
+    left: auto !important;
+}
+.sidebar-collapse-btn.right-btn {
+    left: -16px !important;
+    right: auto !important;
+}
+
+/* Flip chevron arrow icons when collapsed */
+.builder-layout.left-collapsed #btn-toggle-left-collapse {
+    transform: rotate(180deg);
+}
+.builder-layout.right-collapsed #btn-toggle-right-collapse {
+    transform: rotate(180deg);
+}
+
+/* Hide collapse buttons and sales support info on mobile view tabs */
+@media (max-width: 1023px) {
+    .sidebar-collapse-btn {
+        display: none !important;
+    }
+    .sales-support-info {
+        display: none !important;
+    }
+    /* Disable transitioning width on mobile */
+    .toolbox-sidebar, .editor-panel, .preview-panel {
+        transition: none !important;
+    }
+}
+.m-builder-tab-btn:hover {
+    color: var(--text-color-primary);
+}
+.m-builder-tab-btn.active {
+    background: #ffffff;
+    color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 1023px) {
+    .mobile-builder-nav {
+        display: flex;
+    }
+    .builder-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+        height: 100% !important;
+        overflow: hidden !important;
+    }
+    /* Toggle visibility based on active mobile tab class on parent .builder-layout */
+    .builder-layout .toolbox-sidebar,
+    .builder-layout .editor-panel,
+    .builder-layout .preview-panel {
+        display: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        position: relative !important;
+        top: 0 !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        overflow-y: auto !important;
+    }
+    
+    .builder-layout.show-toolbox .toolbox-sidebar {
+        display: flex !important;
+    }
+    .builder-layout.show-editor .editor-panel {
+        display: flex !important;
+    }
+    .builder-layout.show-preview .preview-panel {
+        display: block !important;
+    }
+}
+
+/* Hide Search Bar inside Header when Form Builder is active */
+body.builder-mode-active .app-header-search {
+    display: none !important;
+}
+
+
 
