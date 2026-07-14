@@ -6,7 +6,7 @@
     <title>Prince Form | Workspace Dashboard</title>
     <!-- Base Stylesheet references -->
     <link rel="stylesheet" href="/static/css/common.css">
-    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link class="cache-buster-css" rel="stylesheet" href="/static/css/dashboard.css?v=2.5">
     <link rel="stylesheet" href="/static/css/form.css">
     <link rel="shortcut icon" type="image/x-icon" href="/static/logo.png">
 </head>
@@ -160,137 +160,160 @@
         <!-- VIEW 2: FORM BUILDER -->
         <!-- ================================================================= -->
         <main id="builder-tab" class="tab-content">
+            <!-- Mobile Responsive Sub Navigation for Form Builder -->
+            <div class="mobile-builder-nav">
+                <button type="button" class="m-builder-tab-btn active" data-m-tab="editor">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px; height:16px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                    </svg>
+                    <span>Editor</span>
+                </button>
+                <button type="button" class="m-builder-tab-btn" data-m-tab="preview">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px; height:16px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.43 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Preview</span>
+                </button>
+            </div>
+
             <div class="builder-layout">
                 
-                <!-- Sidebar Elements Palette (Left Column) -->
+                <!-- Sidebar Elements Palette (Left Column / Window) -->
                 <aside class="toolbox-sidebar">
-                    <div class="toolbox-section">
-                        <div class="toolbox-section-header" onclick="toggleToolboxSection(this)">
-                            <span>Basic elements</span>
-                            <svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 14px; height: 14px; transition: transform 0.2s;">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                            </svg>
-                        </div>
-                        <div class="toolbox-grid" id="toolbox-drag-items">
-                            <!-- Header -->
-                            <div class="toolbox-item" draggable="true" data-type="header">
-                                <div class="toolbox-item-preview">
-                                    <div class="preview-mock-header">
-                                        <div class="preview-mock-title">Title goes here</div>
-                                        <div class="preview-mock-subtitle">Subtitle goes here...</div>
-                                    </div>
-                                </div>
-                                <span class="item-name">Header</span>
+                    <!-- Slide button to open/close Left Sidebar -->
+                    <button type="button" id="btn-toggle-left-collapse" class="sidebar-collapse-btn left-btn" title="Toggle Elements Sidebar">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 12px; height: 12px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                        </svg>
+                    </button>
+                    
+                    <div class="sidebar-inner-content">
+                        <div class="toolbox-section">
+                            <div class="toolbox-section-header">
+                                <span>Basic elements</span>
                             </div>
-                            
-                            <!-- Text Box -->
-                            <div class="toolbox-item" draggable="true" data-type="text">
-                                <div class="toolbox-item-preview">
-                                    <div class="preview-mock-input-group">
-                                        <div class="preview-mock-label">A text field goes here</div>
-                                        <div class="preview-mock-input">Input</div>
-                                    </div>
-                                </div>
-                                <span class="item-name">Text Box</span>
-                            </div>
-                            
-                            <!-- Text Area -->
-                            <div class="toolbox-item" draggable="true" data-type="paragraph">
-                                <div class="toolbox-item-preview">
-                                    <div class="preview-mock-textarea-group">
-                                        <div class="preview-mock-label">A text area goes here</div>
-                                        <div class="preview-mock-textarea">Text Area</div>
-                                    </div>
-                                </div>
-                                <span class="item-name">Text Area</span>
-                            </div>
-                            
-                            <!-- Dropdown -->
-                            <div class="toolbox-item" draggable="true" data-type="select">
-                                <div class="toolbox-item-preview">
-                                    <div class="preview-mock-select-group">
-                                        <div class="preview-mock-label">A dropdown menu</div>
-                                        <div class="preview-mock-select">
-                                            <span>Choose</span>
-                                            <svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px; height:10px; opacity:0.6;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            <div class="toolbox-grid" id="toolbox-drag-items">
+                                <!-- Header -->
+                                <div class="toolbox-item" draggable="true" data-type="header">
+                                    <div class="toolbox-item-preview">
+                                        <div class="preview-mock-header">
+                                            <div class="preview-mock-title">Title goes here</div>
+                                            <div class="preview-mock-subtitle">Subtitle goes here...</div>
                                         </div>
                                     </div>
+                                    <span class="item-name">Header</span>
                                 </div>
-                                <span class="item-name">Dropdown</span>
-                            </div>
-                            
-                            <!-- Single Choice -->
-                            <div class="toolbox-item" draggable="true" data-type="radio">
-                                <div class="toolbox-item-preview">
-                                    <div class="preview-mock-choices-group">
-                                        <div class="preview-mock-label">A few single choices</div>
-                                        <div class="preview-mock-choice-row">
-                                            <div class="mock-radio checked"></div>
-                                            <div class="mock-choice-text">Option 1</div>
-                                        </div>
-                                        <div class="preview-mock-choice-row">
-                                            <div class="mock-radio"></div>
-                                            <div class="mock-choice-text">Option 2</div>
+                                
+                                <!-- Text Box -->
+                                <div class="toolbox-item" draggable="true" data-type="text">
+                                    <div class="toolbox-item-preview">
+                                        <div class="preview-mock-input-group">
+                                            <div class="preview-mock-label">A text field goes here</div>
+                                            <div class="preview-mock-input">Input</div>
                                         </div>
                                     </div>
+                                    <span class="item-name">Text Box</span>
                                 </div>
-                                <span class="item-name">Single Choice</span>
-                            </div>
-                            
-                            <!-- Multiple Choice -->
-                            <div class="toolbox-item" draggable="true" data-type="checkbox">
-                                <div class="toolbox-item-preview">
-                                    <div class="preview-mock-choices-group">
-                                        <div class="preview-mock-label">A few multiple choices</div>
-                                        <div class="preview-mock-choice-row">
-                                            <div class="mock-checkbox checked"></div>
-                                            <div class="mock-choice-text">Option 1</div>
-                                        </div>
-                                        <div class="preview-mock-choice-row">
-                                            <div class="mock-checkbox"></div>
-                                            <div class="mock-choice-text">Option 2</div>
+                                
+                                <!-- Text Area -->
+                                <div class="toolbox-item" draggable="true" data-type="paragraph">
+                                    <div class="toolbox-item-preview">
+                                        <div class="preview-mock-textarea-group">
+                                            <div class="preview-mock-label">A text area goes here</div>
+                                            <div class="preview-mock-textarea">Text Area</div>
                                         </div>
                                     </div>
+                                    <span class="item-name">Text Area</span>
                                 </div>
-                                <span class="item-name">Multiple Choice</span>
-                            </div>
-                            
-                            <!-- Date Picker -->
-                            <div class="toolbox-item" draggable="true" data-type="date">
-                                <div class="toolbox-item-preview">
-                                    <div class="preview-mock-date-group">
-                                        <div class="preview-mock-label">A date picker question</div>
-                                        <div class="preview-mock-input mock-date-input">
-                                            <span>DD/MM/YYYY</span>
-                                            <svg class="calendar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; opacity:0.6;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                
+                                <!-- Dropdown -->
+                                <div class="toolbox-item" draggable="true" data-type="select">
+                                    <div class="toolbox-item-preview">
+                                        <div class="preview-mock-select-group">
+                                            <div class="preview-mock-label">A dropdown menu</div>
+                                            <div class="preview-mock-select">
+                                                <span>Choose</span>
+                                                <svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px; height:10px; opacity:0.6;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                            </div>
                                         </div>
                                     </div>
+                                    <span class="item-name">Dropdown</span>
                                 </div>
-                                <span class="item-name">Date Picker</span>
-                            </div>
-                            
-                            <!-- File Upload -->
-                            <div class="toolbox-item" draggable="true" data-type="file">
-                                <div class="toolbox-item-preview">
-                                    <div class="preview-mock-file-group">
-                                        <div class="preview-mock-label">A file upload question</div>
-                                        <div class="preview-mock-file-zone">
-                                            <div class="plus-icon-circle">+</div>
-                                            <span>Upload File</span>
+                                
+                                <!-- Single Choice -->
+                                <div class="toolbox-item" draggable="true" data-type="radio">
+                                    <div class="toolbox-item-preview">
+                                        <div class="preview-mock-choices-group">
+                                            <div class="preview-mock-label">A few single choices</div>
+                                            <div class="preview-mock-choice-row">
+                                                <div class="mock-radio checked"></div>
+                                                <div class="mock-choice-text">Option 1</div>
+                                            </div>
+                                            <div class="preview-mock-choice-row">
+                                                <div class="mock-radio"></div>
+                                                <div class="mock-choice-text">Option 2</div>
+                                            </div>
                                         </div>
                                     </div>
+                                    <span class="item-name">Single Choice</span>
                                 </div>
-                                <span class="item-name">File Upload</span>
+                                
+                                <!-- Multiple Choice -->
+                                <div class="toolbox-item" draggable="true" data-type="checkbox">
+                                    <div class="toolbox-item-preview">
+                                        <div class="preview-mock-choices-group">
+                                            <div class="preview-mock-label">A few multiple choices</div>
+                                            <div class="preview-mock-choice-row">
+                                                <div class="mock-checkbox checked"></div>
+                                                <div class="mock-choice-text">Option 1</div>
+                                            </div>
+                                            <div class="preview-mock-choice-row">
+                                                <div class="mock-checkbox"></div>
+                                                <div class="mock-choice-text">Option 2</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span class="item-name">Multiple Choice</span>
+                                </div>
+                                
+                                <!-- Date Picker -->
+                                <div class="toolbox-item" draggable="true" data-type="date">
+                                    <div class="toolbox-item-preview">
+                                        <div class="preview-mock-date-group">
+                                            <div class="preview-mock-label">A date picker question</div>
+                                            <div class="preview-mock-input mock-date-input">
+                                                <span>DD/MM/YYYY</span>
+                                                <svg class="calendar-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px; height:12px; opacity:0.6;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span class="item-name">Date Picker</span>
+                                </div>
+                                
+                                <!-- File Upload -->
+                                <div class="toolbox-item" draggable="true" data-type="file">
+                                    <div class="toolbox-item-preview">
+                                        <div class="preview-mock-file-group">
+                                            <div class="preview-mock-label">A file upload question</div>
+                                            <div class="preview-mock-file-zone">
+                                                <div class="plus-icon-circle">+</div>
+                                                <span>Upload File</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span class="item-name">File Upload</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </aside>
 
-                <!-- Center panel: Question Editor & Design Configurations -->
+                <!-- Center panel: Form Editor with Tabs (Center Column / Window) -->
                 <section class="editor-panel">
                     
                     <div class="builder-section-title">
-                        <span class="gradient-text">Form Structure & Content</span>
+                        <span class="gradient-text">Form Editor</span>
                         <div style="display:flex; gap:8px;">
                             <button id="btn-share-builder" class="btn btn-secondary" style="font-size:0.85rem; padding:6px 12px; display:none;">Share</button>
                             <button id="btn-preview-form" class="btn btn-secondary" style="font-size:0.85rem; padding:6px 16px;">Live Preview</button>
@@ -298,76 +321,42 @@
                         </div>
                     </div>
 
-                    <!-- Multi-Page Tab Controls -->
-                    <div class="pages-tabs-container" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; background: rgba(0,0,0,0.02); padding: 8px 12px; border-radius: 8px; border: 1px dashed var(--border-color);">
-                        <div class="pages-tabs" id="builder-pages-tabs" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px;">
-                            <!-- Populated dynamically -->
-                        </div>
-                        <button type="button" id="btn-add-page" class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 10px; margin: 0; min-height: unset; height: auto;">+ Add Page</button>
+                    <!-- Sub-navigation tabs within the Center Editor panel -->
+                    <div class="editor-tabs-nav">
+                        <button type="button" class="editor-tab-btn active" data-editor-tab="content">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" style="width:14px; height:14px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                            </svg>
+                            Form Content
+                        </button>
+                        <button type="button" class="editor-tab-btn" data-editor-tab="settings">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" style="width:14px; height:14px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Form Settings
+                        </button>
                     </div>
-                    
-                    <!-- Basic details -->
-                    <div class="form-group">
-                        <label class="form-label">Form Title</label>
-                        <input type="text" id="form-title-input" class="input-text" placeholder="Untitled Form">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <div class="editor-toolbar" data-target="form-desc-editor">
-                            <button type="button" class="editor-btn" data-command="bold" title="Bold"><b>B</b></button>
-                            <button type="button" class="editor-btn" data-command="italic" title="Italic"><i>I</i></button>
-                            <button type="button" class="editor-btn" data-command="underline" title="Underline"><u>U</u></button>
-                            <button type="button" class="editor-btn" data-command="insertUnorderedList" title="Bullet List">&#8226;&nbsp;List</button>
-                            <button type="button" class="editor-btn" data-command="createLink" title="Insert Link">🔗 Link</button>
-                            <button type="button" class="editor-btn" data-command="removeFormat" title="Clear Format">&times; Format</button>
-                        </div>
-                        <div id="form-desc-editor" class="rich-text-editor" contenteditable="true" placeholder="Form Description"></div>
-                    </div>
-                    
-                    <hr style="border:none; border-top:1px solid var(--border-color);">
 
-                    <!-- Advanced Settings -->
-                    <div class="branding-options">
-                        <div class="builder-section-title" style="font-size:1.05rem; border:none; padding:0;">Advanced Form Settings</div>
-                        
-                        <div class="form-group" style="flex-direction:row; align-items:center; justify-content:space-between; padding:4px 0;">
-                            <label class="form-label" style="cursor:pointer;" for="form-accepting-input">Accepting Responses</label>
-                            <input type="checkbox" id="form-accepting-input" checked style="width:20px; height:20px; cursor:pointer;">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Custom Submission Message</label>
-                            <input type="text" id="form-confirmation-input" class="input-text" placeholder="Your response has been recorded.">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Success Page Layout</label>
-                            <select id="form-success-layout-select" class="q-type-select" style="font-size:0.95rem;">
-                                <option value="classic">Classic Centered Card</option>
-                                <option value="minimal">Minimalist Clean Screen</option>
-                                <option value="splash">Vibrant Theme Gradient Splash</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Success Celebration Icon</label>
-                            <select id="form-success-icon-select" class="q-type-select" style="font-size:0.95rem;">
-                                <option value="checkmark">Animated Checkmark</option>
-                                <option value="star">Shining Star</option>
-                                <option value="heart">Beating Heart</option>
-                                <option value="thumbs_up">Thumbs Up</option>
-                            </select>
+                    <!-- Content Tab Area -->
+                    <div class="editor-tab-content active" id="editor-tab-content-area" data-editor-tab-content="content">
+                        <!-- Multi-Page Tab Controls -->
+                        <div class="pages-tabs-container" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; background: rgba(0,0,0,0.02); padding: 8px 12px; border-radius: 8px; border: 1px dashed var(--border-color);">
+                            <div class="pages-tabs" id="builder-pages-tabs" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px;">
+                                <!-- Populated dynamically -->
+                            </div>
+                            <button type="button" id="btn-add-page" class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 10px; margin: 0; min-height: unset; height: auto;">+ Add Page</button>
                         </div>
                         
-                        <div class="form-group" style="flex-direction:row; align-items:center; justify-content:space-between; padding:4px 0;">
-                            <label class="form-label" style="cursor:pointer;" for="form-submit-another-input">Show "Submit another response" Link</label>
-                            <input type="checkbox" id="form-submit-another-input" checked style="width:20px; height:20px; cursor:pointer;">
+                        <!-- Basic details -->
+                        <div class="form-group" style="margin-bottom:16px;">
+                            <label class="form-label">Form Title</label>
+                            <input type="text" id="form-title-input" class="input-text" placeholder="Untitled Form">
                         </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Detailed Success Description (Optional)</label>
-                            <div class="editor-toolbar" data-target="form-success-desc-editor">
+                        
+                        <div class="form-group" style="margin-bottom:16px;">
+                            <label class="form-label">Description</label>
+                            <div class="editor-toolbar" data-target="form-desc-editor">
                                 <button type="button" class="editor-btn" data-command="bold" title="Bold"><b>B</b></button>
                                 <button type="button" class="editor-btn" data-command="italic" title="Italic"><i>I</i></button>
                                 <button type="button" class="editor-btn" data-command="underline" title="Underline"><u>U</u></button>
@@ -375,129 +364,193 @@
                                 <button type="button" class="editor-btn" data-command="createLink" title="Insert Link">🔗 Link</button>
                                 <button type="button" class="editor-btn" data-command="removeFormat" title="Clear Format">&times; Format</button>
                             </div>
-                            <div id="form-success-desc-editor" class="rich-text-editor" contenteditable="true" placeholder="Add detailed instructions, thank you notes, or next steps context..."></div>
+                            <div id="form-desc-editor" class="rich-text-editor" contenteditable="true" placeholder="Form Description"></div>
                         </div>
+                        
+                        <hr style="border:none; border-top:1px solid var(--border-color); margin: 24px 0;">
 
-                        <div class="form-group">
-                            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-                                <span>Call-to-Action Buttons</span>
-                                <button type="button" id="btn-add-success-btn" class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px; margin:0;">+ Add Button</button>
-                            </label>
-                            <div id="success-buttons-container" style="display:flex; flex-direction:column; gap:8px;">
-                                <!-- Populate buttons dynamically -->
-                            </div>
+                        <!-- Questions List Editor -->
+                        <div class="builder-section-title" style="font-size:1.05rem; border:none; padding:0; margin-bottom:12px;">Form Questions</div>
+                        <div class="questions-editor-list" id="questions-editor-list">
+                            <!-- Questions dynamically loaded -->
                         </div>
-
-                        <div class="form-group">
-                            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
-                                <span>Follow-up Instruction Steps</span>
-                                <button type="button" id="btn-add-success-step" class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px; margin:0;">+ Add Step</button>
-                            </label>
-                            <div id="success-steps-container" style="display:flex; flex-direction:column; gap:8px;">
-                                <!-- Populate steps dynamically -->
-                            </div>
-                        </div>
-
-                        <div class="form-group" style="flex-direction:row; align-items:center; justify-content:space-between; padding:4px 0;">
-                            <label class="form-label" style="cursor:pointer;" for="form-social-share-input">Show Social Share Icons</label>
-                            <input type="checkbox" id="form-social-share-input" style="width:20px; height:20px; cursor:pointer;">
-                        </div>
+                        
+                        <button type="button" id="btn-add-question" class="btn btn-secondary" style="border-style:dashed; width:100%; margin-top:12px;">+ Add Question Element</button>
                     </div>
-                    
-                    <hr style="border:none; border-top:1px solid var(--border-color);">
-                    
-                    <!-- Theme & Custom Branding -->
-                    <div class="branding-options">
-                        <div class="builder-section-title" style="font-size:1.05rem; border:none; padding:0;">Custom Branding</div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Primary Color Theme</label>
-                            <div class="color-presets" id="theme-presets-container">
-                                <!-- Loaded dynamically -->
+
+                    <!-- Settings Tab Area -->
+                    <div class="editor-tab-content" id="editor-tab-settings-area" data-editor-tab-content="settings" style="display: none;">
+                        <!-- Advanced Settings -->
+                        <div class="branding-options">
+                            <div class="builder-section-title" style="font-size:1.05rem; border:none; padding:0; margin-bottom:16px;">Advanced Form Settings</div>
+                            
+                            <div class="form-group" style="flex-direction:row; align-items:center; justify-content:space-between; padding:4px 0;">
+                                <label class="form-label" style="cursor:pointer;" for="form-accepting-input">Accepting Responses</label>
+                                <input type="checkbox" id="form-accepting-input" checked style="width:20px; height:20px; cursor:pointer;">
                             </div>
-                            <input type="color" id="theme-color-input" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; margin-top:8px; border-radius:4px;">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Background Color</label>
-                            <input type="color" id="bg-color-input" value="#f0ebf8" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; border-radius:4px;">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Text Color</label>
-                            <input type="color" id="text-color-input" value="#202124" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; border-radius:4px;">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Submit Button Color</label>
-                            <input type="color" id="btn-color-input" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; border-radius:4px;">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Typography Style</label>
-                            <select id="font-select" class="q-type-select" style="font-size:0.95rem;">
-                                <option value="Inter">Inter (Clean / Neutral)</option>
-                                <option value="Outfit">Outfit (Modern / Friendly)</option>
-                                <option value="Roboto">Roboto (Google Classic)</option>
-                                <option value="Georgia">Georgia (Elegant Serif)</option>
-                                <option value="Courier New">Courier New (Monospace)</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Card Corner Theme</label>
-                            <select id="card-style-select" class="q-type-select" style="font-size:0.95rem;">
-                                <option value="elevated">Elevated (Rounded + Shadow)</option>
-                                <option value="flat">Flat Minimal (Sharp Borders)</option>
-                                <option value="glass">Modern Glassmorphism (Blur + Transparency)</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Custom Logo Image</label>
-                            <div style="display:flex; gap:8px;">
-                                <input type="text" id="logo-url-input" class="input-text" placeholder="https://example.com/logo.png" style="flex:1;">
-                                <label class="btn btn-secondary" style="font-size:0.8rem; padding:10px 14px; margin:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap;">
-                                    Upload
-                                    <input type="file" id="logo-file-input" accept="image/*" style="display:none;">
+
+                            <div class="form-group">
+                                <label class="form-label">Custom Submission Message</label>
+                                <input type="text" id="form-confirmation-input" class="input-text" placeholder="Your response has been recorded.">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Success Page Layout</label>
+                                <select id="form-success-layout-select" class="q-type-select" style="font-size:0.95rem;">
+                                    <option value="classic">Classic Centered Card</option>
+                                    <option value="minimal">Minimalist Clean Screen</option>
+                                    <option value="splash">Vibrant Theme Gradient Splash</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Success Celebration Icon</label>
+                                <select id="form-success-icon-select" class="q-type-select" style="font-size:0.95rem;">
+                                    <option value="checkmark">Animated Checkmark</option>
+                                    <option value="star">Shining Star</option>
+                                    <option value="heart">Beating Heart</option>
+                                    <option value="thumbs_up">Thumbs Up</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="flex-direction:row; align-items:center; justify-content:space-between; padding:4px 0;">
+                                <label class="form-label" style="cursor:pointer;" for="form-submit-another-input">Show "Submit another response" Link</label>
+                                <input type="checkbox" id="form-submit-another-input" checked style="width:20px; height:20px; cursor:pointer;">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Detailed Success Description (Optional)</label>
+                                <div class="editor-toolbar" data-target="form-success-desc-editor">
+                                    <button type="button" class="editor-btn" data-command="bold" title="Bold"><b>B</b></button>
+                                    <button type="button" class="editor-btn" data-command="italic" title="Italic"><i>I</i></button>
+                                    <button type="button" class="editor-btn" data-command="underline" title="Underline"><u>U</u></button>
+                                    <button type="button" class="editor-btn" data-command="insertUnorderedList" title="Bullet List">&#8226;&nbsp;List</button>
+                                    <button type="button" class="editor-btn" data-command="createLink" title="Insert Link">🔗 Link</button>
+                                    <button type="button" class="editor-btn" data-command="removeFormat" title="Clear Format">&times; Format</button>
+                                </div>
+                                <div id="form-success-desc-editor" class="rich-text-editor" contenteditable="true" placeholder="Add detailed instructions, thank you notes, or next steps context..."></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                                    <span>Call-to-Action Buttons</span>
+                                    <button type="button" id="btn-add-success-btn" class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px; margin:0;">+ Add Button</button>
                                 </label>
+                                <div id="success-buttons-container" style="display:flex; flex-direction:column; gap:8px;">
+                                    <!-- Populate buttons dynamically -->
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                                    <span>Follow-up Instruction Steps</span>
+                                    <button type="button" id="btn-add-success-step" class="btn btn-secondary" style="font-size:0.75rem; padding:4px 8px; margin:0;">+ Add Step</button>
+                                </label>
+                                <div id="success-steps-container" style="display:flex; flex-direction:column; gap:8px;">
+                                    <!-- Populate steps dynamically -->
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="flex-direction:row; align-items:center; justify-content:space-between; padding:4px 0;">
+                                <label class="form-label" style="cursor:pointer;" for="form-social-share-input">Show Social Share Icons</label>
+                                <input type="checkbox" id="form-social-share-input" style="width:20px; height:20px; cursor:pointer;">
                             </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label class="form-label">Custom Header Banner</label>
-                            <div style="display:flex; gap:8px;">
-                                <input type="text" id="banner-url-input" class="input-text" placeholder="https://images.unsplash.com/photo-..." style="flex:1;">
-                                <label class="btn btn-secondary" style="font-size:0.8rem; padding:10px 14px; margin:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap;">
-                                    Upload
-                                    <input type="file" id="banner-file-input" accept="image/*" style="display:none;">
-                                </label>
+                        <hr style="border:none; border-top:1px solid var(--border-color); margin: 24px 0;">
+                        
+                        <!-- Theme & Custom Branding -->
+                        <div class="branding-options">
+                            <div class="builder-section-title" style="font-size:1.05rem; border:none; padding:0; margin-bottom:16px;">Custom Branding</div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Primary Color Theme</label>
+                                <div class="color-presets" id="theme-presets-container">
+                                    <!-- Loaded dynamically -->
+                                </div>
+                                <input type="color" id="theme-color-input" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; margin-top:8px; border-radius:4px;">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Background Color</label>
+                                <input type="color" id="bg-color-input" value="#f0ebf8" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; border-radius:4px;">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Text Color</label>
+                                <input type="color" id="text-color-input" value="#202124" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; border-radius:4px;">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Submit Button Color</label>
+                                <input type="color" id="btn-color-input" style="width:50px; height:30px; border:1px solid var(--border-color); cursor:pointer; border-radius:4px;">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Typography Style</label>
+                                <select id="font-select" class="q-type-select" style="font-size:0.95rem;">
+                                    <option value="Inter">Inter (Clean / Neutral)</option>
+                                    <option value="Outfit">Outfit (Modern / Friendly)</option>
+                                    <option value="Roboto">Roboto (Google Classic)</option>
+                                    <option value="Georgia">Georgia (Elegant Serif)</option>
+                                    <option value="Courier New">Courier New (Monospace)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Card Corner Theme</label>
+                                <select id="card-style-select" class="q-type-select" style="font-size:0.95rem;">
+                                    <option value="elevated">Elevated (Rounded + Shadow)</option>
+                                    <option value="flat">Flat Minimal (Sharp Borders)</option>
+                                    <option value="glass">Modern Glassmorphism (Blur + Transparency)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Custom Logo Image</label>
+                                <div style="display:flex; gap:8px;">
+                                    <input type="text" id="logo-url-input" class="input-text" placeholder="https://example.com/logo.png" style="flex:1;">
+                                    <label class="btn btn-secondary" style="font-size:0.8rem; padding:10px 14px; margin:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap;">
+                                        Upload
+                                        <input type="file" id="logo-file-input" accept="image/*" style="display:none;">
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Custom Header Banner</label>
+                                <div style="display:flex; gap:8px;">
+                                    <input type="text" id="banner-url-input" class="input-text" placeholder="https://images.unsplash.com/photo-..." style="flex:1;">
+                                    <label class="btn btn-secondary" style="font-size:0.8rem; padding:10px 14px; margin:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap;">
+                                        Upload
+                                        <input type="file" id="banner-file-input" accept="image/*" style="display:none;">
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <hr style="border:none; border-top:1px solid var(--border-color);">
-                    
-                    <!-- Questions List Editor -->
-                    <div class="builder-section-title" style="font-size:1.05rem; border:none; padding:0;">Form Questions</div>
-                    <div class="questions-editor-list" id="questions-editor-list">
-                        <!-- Questions dynamically loaded -->
-                    </div>
-                    
-                    <button id="btn-add-question" class="btn btn-secondary" style="border-style:dashed;">+ Add Question Element</button>
                 </section>
                 
-                <!-- Right panel: Live Form Preview -->
+                <!-- Right panel: Live Form Preview (Right Column / Window) -->
                 <section class="preview-panel">
-                    <div style="font-family:'Outfit'; font-size:1.1rem; color:var(--text-color-secondary); margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                        <span>Live Dynamic Preview</span>
-                        <div class="preview-toggle-capsule">
-                            <button class="preview-toggle-btn active" id="preview-toggle-form" data-mode="form">Form View</button>
-                            <button class="preview-toggle-btn" id="preview-toggle-success" data-mode="success">Success View</button>
+                    <!-- Slide button to open/close Right Sidebar -->
+                    <button type="button" id="btn-toggle-right-collapse" class="sidebar-collapse-btn right-btn" title="Toggle Live Preview Panel">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 12px; height: 12px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                    </button>
+                    
+                    <div class="sidebar-inner-content">
+                        <div style="font-family:'Outfit'; font-size:1.1rem; color:var(--text-color-secondary); margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <span>Live Dynamic Preview</span>
+                            <div class="preview-toggle-capsule">
+                                <button class="preview-toggle-btn active" id="preview-toggle-form" data-mode="form">Form View</button>
+                                <button class="preview-toggle-btn" id="preview-toggle-success" data-mode="success">Success View</button>
+                            </div>
                         </div>
-                    </div>
-                    <div id="preview-wrapper">
-                        <!-- Preview loaded here -->
+                        <div id="preview-wrapper">
+                            <!-- Preview loaded here -->
+                        </div>
                     </div>
                 </section>
                 
@@ -582,6 +635,6 @@
     </div>
     
     <!-- Script code source -->
-    <script src="/static/js/dashboard.js"></script>
+    <script src="/static/js/dashboard.js?v=2.5"></script>
 </body>
 </html>
