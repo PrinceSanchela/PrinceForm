@@ -794,8 +794,17 @@ async def create_form(form: FormModel, request: Request):
     await db.db["forms"].insert_one(form_dict)
     return form
 
+async def run_legacy_migration(user_id: str):
+    try:
+        await db.db["forms"].update_many(
+            {"$or": [{"userId": {"$exists": False}}, {"userId": None}]},
+            {"$set": {"userId": user_id}}
+        )
+    except Exception as e:
+        logger.error(f"Error migrating legacy forms: {e}")
+
 @app.get("/api/forms", response_model=List[FormModel])
-async def list_forms(request: Request):
+async def list_forms(request: Request, background_tasks: BackgroundTasks):
     """Retrieve all created forms for the current logged in user (sorted by creation date)."""
     if db.db is None:
         return []
@@ -804,11 +813,8 @@ async def list_forms(request: Request):
     if not user_id:
         raise HTTPException(status_code=401, detail="Unauthorized")
         
-    # Auto-migrate legacy unowned forms (where userId is missing or None) to this user
-    await db.db["forms"].update_many(
-        {"$or": [{"userId": {"$exists": False}}, {"userId": None}]},
-        {"$set": {"userId": user_id}}
-    )
+    # Queue legacy migration in background to prevent request latency
+    background_tasks.add_task(run_legacy_migration, user_id)
         
     forms = []
     cursor = db.db["forms"].find({"userId": user_id}).sort("createdAt", -1)

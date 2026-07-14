@@ -194,6 +194,10 @@ h1, h2, h3, h4, h5, h6 {
     vertical-align: middle;
     margin-right: 6px;
 }
+.spinner-dark {
+    border-color: rgba(0, 0, 0, 0.1) !important;
+    border-top-color: var(--primary-color) !important;
+}
 
 @keyframes spin {
     to { transform: rotate(360deg); }

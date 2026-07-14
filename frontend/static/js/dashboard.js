@@ -404,6 +404,15 @@ function setupSidebarCollapsing() {
 // API SERVICES
 // =========================================================================
 async function loadForms() {
+    const grid = document.getElementById("forms-grid-container");
+    if (grid) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; color: var(--text-color-secondary);" class="animate-fade-in">
+                <span class="btn-spinner spinner-dark" style="width: 32px; height: 32px; border-width: 3px; margin-bottom: 12px;"></span>
+                <span style="font-family: 'Outfit'; font-weight: 500;">Loading your forms...</span>
+            </div>
+        `;
+    }
     try {
         const response = await fetch("/api/forms");
         if (!response.ok) {
@@ -489,7 +498,13 @@ async function createNewForm() {
     switchTab("builder");
 }
 
-async function loadFormToEdit(formId) {
+async function loadFormToEdit(formId, btn) {
+    let originalHtml = "";
+    if (btn) {
+        btn.disabled = true;
+        originalHtml = btn.innerHTML;
+        btn.innerHTML = `<span class="btn-spinner"></span> Loading...`;
+    }
     try {
         const response = await fetch(`/api/forms/${formId}`);
         if (!response.ok) throw new Error("Failed to load form definition");
@@ -501,7 +516,12 @@ async function loadFormToEdit(formId) {
         switchTab("builder");
     } catch (err) {
         console.error(err);
-        alert("Error loading form.");
+        alert("Error loading form: " + err.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
     }
 }
 
@@ -560,9 +580,15 @@ async function saveActiveForm() {
     }
 }
 
-async function deleteForm(formId) {
+async function deleteForm(formId, btn) {
     if (!confirm("Are you sure you want to delete this form and all its responses?")) return;
     
+    let originalHtml = "";
+    if (btn) {
+        btn.disabled = true;
+        originalHtml = btn.innerHTML;
+        btn.innerHTML = `<span class="btn-spinner"></span>...`;
+    }
     try {
         const response = await fetch(`/api/forms/${formId}`, { method: "DELETE" });
         if (!response.ok) throw new Error("Delete request failed");
@@ -571,25 +597,55 @@ async function deleteForm(formId) {
             activeForm = null;
         }
         
-        loadForms();
+        await loadForms();
     } catch (err) {
         console.error(err);
-        alert("Failed to delete form");
+        alert("Failed to delete form: " + err.message);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
     }
 }
 
 async function loadResponses(formId) {
+    const tbody = document.getElementById("responses-table-body");
+    const chartsContainer = document.getElementById("analytics-charts-container");
+    const exportBtn = document.getElementById("btn-export-csv");
+    
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="100" style="text-align:center; padding: 32px;"><span class="btn-spinner spinner-dark" style="width: 24px; height: 24px; border-width: 2.5px;"></span> Loading submissions...</td></tr>`;
+    }
+    if (chartsContainer) {
+        chartsContainer.innerHTML = `<div style="text-align:center; padding:48px; color:var(--text-color-muted); grid-column: 1/-1;"><span class="btn-spinner spinner-dark" style="width: 28px; height: 28px; border-width: 2.5px; margin-bottom: 8px;"></span><br>Loading analytics breakdown...</div>`;
+    }
+    if (exportBtn) {
+        exportBtn.disabled = true;
+    }
+    
     try {
         const response = await fetch(`/api/forms/${formId}/responses`);
+        if (!response.ok) throw new Error("Failed to fetch form responses");
         activeFormResponses = await response.json();
         
         // Render statistics cards
-        document.getElementById("total-responses-count").innerText = activeFormResponses.length;
+        const countEl = document.getElementById("total-responses-count");
+        if (countEl) countEl.innerText = activeFormResponses.length;
         
         renderResponsesTable();
         renderAnalyticsCharts();
     } catch (err) {
         console.error("Error loading responses:", err);
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="100" style="text-align:center; padding: 24px; color:#c81e1e;">Failed to load submissions: ${escapeHTML(err.message)}</td></tr>`;
+        }
+        if (chartsContainer) {
+            chartsContainer.innerHTML = `<div style="text-align:center; padding:24px; color:#c81e1e; grid-column: 1/-1;">Failed to load analytics: ${escapeHTML(err.message)}</div>`;
+        }
+    } finally {
+        if (exportBtn) {
+            exportBtn.disabled = false;
+        }
     }
 }
 
@@ -642,14 +698,14 @@ function renderFormsGrid() {
         `;
         
         // Attach card events
-        card.querySelector(".btn-edit").addEventListener("click", () => loadFormToEdit(form.id));
+        card.querySelector(".btn-edit").addEventListener("click", (e) => loadFormToEdit(form.id, e.currentTarget));
         card.querySelector(".btn-share").addEventListener("click", () => openShareModal(cardUrl));
         card.querySelector(".btn-analytics").addEventListener("click", () => {
             activeForm = form;
             setupBuilderWorkspace(); // Prepare structures
             switchTab("responses");
         });
-        card.querySelector(".btn-delete").addEventListener("click", () => deleteForm(form.id));
+        card.querySelector(".btn-delete").addEventListener("click", (e) => deleteForm(form.id, e.currentTarget));
         
         grid.appendChild(card);
     });
