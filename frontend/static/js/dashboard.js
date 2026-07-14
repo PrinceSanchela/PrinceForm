@@ -212,6 +212,11 @@ function initApp() {
         });
     }
 
+    // Setup sub tabs and mobile view toggles
+    setupEditorSubTabs();
+    setupMobileBuilderTabs();
+    setupSidebarCollapsing();
+
     // Setup drag and drop toolbox listeners
     initDragAndDrop();
 }
@@ -303,12 +308,95 @@ function switchTab(tabName) {
     document.querySelectorAll(".tab-content").forEach(content => {
         content.classList.toggle("active", content.id === `${tabName}-tab`);
     });
+
+    // Toggle builder active height styling
+    const cardContent = document.querySelector(".app-card-content");
+    if (cardContent) {
+        if (tabName === "builder") {
+            cardContent.classList.add("builder-active-mode");
+            document.body.classList.add("builder-mode-active");
+        } else {
+            cardContent.classList.remove("builder-active-mode");
+            document.body.classList.remove("builder-mode-active");
+        }
+    }
     
     // Perform actions on tab enter
     if (tabName === "forms") {
         loadForms();
     } else if (tabName === "responses") {
         loadResponses(activeForm.id);
+    }
+}
+
+function setupEditorSubTabs() {
+    const subTabs = document.querySelectorAll(".editor-tab-btn");
+    subTabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+            const target = tab.dataset.editorTab;
+            
+            // Toggle active states on buttons
+            subTabs.forEach(t => t.classList.toggle("active", t.dataset.editorTab === target));
+            
+            // Toggle visibility of content wrappers
+            document.querySelectorAll("[data-editor-tab-content]").forEach(content => {
+                if (content.dataset.editorTabContent === target) {
+                    content.style.display = "block";
+                } else {
+                    content.style.display = "none";
+                }
+            });
+        });
+    });
+}
+
+function setupMobileBuilderTabs() {
+    const mobileTabs = document.querySelectorAll(".m-builder-tab-btn");
+    const builderLayout = document.querySelector(".builder-layout");
+    
+    if (builderLayout) {
+        // Default to Editor panel on mobile load
+        builderLayout.classList.add("show-editor");
+        mobileTabs.forEach(tab => {
+            tab.classList.toggle("active", tab.dataset.mTab === "editor");
+        });
+    }
+    
+    mobileTabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+            const target = tab.dataset.mTab;
+            
+            mobileTabs.forEach(t => t.classList.toggle("active", t.dataset.mTab === target));
+            
+            if (builderLayout) {
+                builderLayout.classList.remove("show-toolbox", "show-editor", "show-preview");
+                if (target === "toolbox") {
+                    builderLayout.classList.add("show-toolbox");
+                } else if (target === "editor") {
+                    builderLayout.classList.add("show-editor");
+                } else if (target === "preview") {
+                    builderLayout.classList.add("show-preview");
+                }
+            }
+        });
+    });
+}
+
+function setupSidebarCollapsing() {
+    const btnLeft = document.getElementById("btn-toggle-left-collapse");
+    const btnRight = document.getElementById("btn-toggle-right-collapse");
+    const layout = document.querySelector(".builder-layout");
+    
+    if (btnLeft && layout) {
+        btnLeft.addEventListener("click", () => {
+            layout.classList.toggle("left-collapsed");
+        });
+    }
+    
+    if (btnRight && layout) {
+        btnRight.addEventListener("click", () => {
+            layout.classList.toggle("right-collapsed");
+        });
     }
 }
 
@@ -2536,7 +2624,8 @@ function initDragAndDrop() {
     
     canvas.addEventListener("dragover", (e) => {
         e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
+        const isNewElement = e.dataTransfer.types.includes("element-type");
+        e.dataTransfer.dropEffect = isNewElement ? "copy" : "move";
         canvas.classList.add("drag-over-active");
         
         const dragOverCard = e.target.closest(".question-edit-card");
