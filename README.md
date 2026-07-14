@@ -4,13 +4,19 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.95.0+-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-4.4+-4ea94b.svg?style=flat&logo=mongodb)](https://www.mongodb.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.8-indigo.svg)](#)
+[![Version](https://img.shields.io/badge/version-2.9-indigo.svg)](#)
 
 Prince Form is an ultra-premium, modern, and highly interactive drag-and-drop web form builder. Designed with a sleek, split-screen SaaS dashboard interface, it allows creators to easily design multi-page forms, configure advanced validation constraints, upload custom branding (logo/banners), preview form links, and monitor submissions in real time.
 
 ---
 
 ## 🚀 Key Features
+
+### 🎨 Form Builder Layout Overhaul & Sticky Sidebars (v2.9)
+*   **Collapsible Workspace Panels**: Redesigned the form builder layout with a collapsible left toolbox sidebar and a collapsible right live preview panel, controlled by floating indigo chevron buttons.
+*   **Sticky Sidebars & Bounded Height**: Set left and right sidebars to sticky positioning (`top: 24px`) with decoupled local overflow scrolling, keeping elements and live previews pinned in full view while editing questions list.
+*   **Laptop Drag-and-Drop Fix**: Resolved an API `dropEffect` mismatch (`copy` for new elements vs `move` for question card reordering) to restore drag-and-drop support on laptop browsers.
+*   **Responsive Workspace Cleanup**: Removed the elements toolbox tab on mobile/tablets to focus strictly on editing and previewing, and hid workspace search inputs and sales headers on active dashboard routes.
 
 ### ⚡ Performance & Database Indexing (v2.8)
 *   **Eliminated Base64 Storage Bloat**: Custom logo and banner uploads are sent directly to the `/api/upload` endpoint, saving lightweight filesystem paths in MongoDB rather than bloating database records with megabytes of raw Base64 data.
