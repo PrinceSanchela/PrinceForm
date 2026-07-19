@@ -12,6 +12,14 @@ Prince Form is an ultra-premium, modern, and highly interactive drag-and-drop we
 
 ## 🚀 Key Features
 
+### 📊 Google Sheets Sync & Enterprise Security Upgrades (v3.5)
+*   **Google Sheets Live Syncing Integration**: Mimics Google Forms' "Link to Sheets" by generating a secure, token-protected `=IMPORTDATA("...")` formula. Allows cloud spreadsheets to pull responses in real time without password sharing or OAuth write-access scope exposures.
+*   **Excel & Google Sheets Data Protection**: Formats phone numbers and long numerical codes inside the CSV using Excel-compatible text formulas (`="number"`) to prevent scientific notation truncation (`9.43E+09`) and leading zero stripping.
+*   **Production CSV Stream & Blob Exports**: Employs Blob streaming URLs in the browser instead of raw data URIs, supporting unlimited rows of exports and prefixing a UTF-8 BOM (`\ufeff`) to ensure special character rendering in spreadsheet utilities.
+*   **Layout Isolated PDF Printing**: Isolates outer parent cards and sidebars on print media queries, showing a custom `.print-header` and `.print-footer` banner alongside the raw responses table for clean physical paper reporting.
+*   **Secure Code Storage Hashing**: Implemented SHA-256 OTP hashes inside MongoDB collections for signup and password-reset stages. Physically deletes code entries upon validation or lockout.
+*   **User Timestamps**: Tracks database-managed `createdAt` and `updatedAt` timestamps for all registered accounts.
+
 ### ⚡ Performance Optimization & UX Enhancements (v3.0)
 *   **Asynchronous Database Migrations**: Moved legacy unowned forms database updates to background threads, dramatically reducing page load response times from seconds to milliseconds.
 *   **Visual Loading States**: Added a dark spinner style and integrated responsive loading indicators for form lists, edit actions, delete operations, and response databases to prevent duplicate user submissions.
