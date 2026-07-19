@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any, Union
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 def generate_short_id() -> str:
@@ -50,6 +50,8 @@ class UserModel(BaseModel):
     password_hash: str
     failedAttempts: int = 0
     lockoutUntil: Optional[datetime] = None
+    createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 class ResetCodeModel(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
@@ -76,10 +78,12 @@ class FormModel(BaseModel):
     successButtons: List[Dict[str, str]] = []
     successSteps: List[str] = []
     showSocialShare: bool = False
-    createdAt: datetime = Field(default_factory=datetime.utcnow)
+    createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    responseShareToken: Optional[str] = None
+    isLinkedToSheets: bool = False
 
 class ResponseModel(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
     formId: str
     answers: Dict[str, Any]  # Key: question.id, Value: user answer (str, list, number)
-    submittedAt: datetime = Field(default_factory=datetime.utcnow)
+    submittedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))

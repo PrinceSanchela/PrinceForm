@@ -44,6 +44,11 @@ class DatabaseHelper:
             await self.db["password_resets"].create_index("expiresAt", expireAfterSeconds=0)
             await self.db["password_resets"].create_index("email")
             
+            # Signup verification OTP indexes
+            await self.db["signup_otps"].create_index("expiresAt", expireAfterSeconds=0)
+            await self.db["signup_otps"].create_index("email")
+            
+            
         except Exception as e:
             logger.error(f"Error connecting to MongoDB: {str(e)}")
             self.client = None
