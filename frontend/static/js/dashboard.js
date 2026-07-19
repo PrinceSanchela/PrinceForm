@@ -41,7 +41,7 @@ function initApp() {
         }
     });
     document.getElementById("btn-add-question").addEventListener("click", addQuestion);
-    document.getElementById("btn-export-csv").addEventListener("click", exportResponsesToCSV);
+    setupResponsesActionsListeners();
     
     // Share modal handlers
     document.getElementById("close-share-modal").addEventListener("click", closeShareModal);
@@ -325,6 +325,21 @@ function switchTab(tabName) {
     if (tabName === "forms") {
         loadForms();
     } else if (tabName === "responses") {
+        if (!activeForm || !activeForm.id) {
+            const tbody = document.getElementById("responses-table-body");
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="100" style="text-align:center; padding: 48px; color:var(--text-color-muted);">No form selected. Go to <a href="#" onclick="switchTab('forms'); return false;" style="color:var(--primary-color); text-decoration:underline;">My Forms</a> to select a form.</td></tr>`;
+            }
+            const countEl = document.getElementById("total-responses-count");
+            if (countEl) countEl.innerText = "0";
+            const chartsContainer = document.getElementById("analytics-charts-container");
+            if (chartsContainer) {
+                chartsContainer.innerHTML = `<div style="text-align:center; padding:48px; color:var(--text-color-muted); grid-column:1/-1;">No form selected.</div>`;
+            }
+            // Disable Sheets controls in UI
+            updateSheetsUIState();
+            return;
+        }
         loadResponses(activeForm.id);
     }
 }
@@ -611,7 +626,7 @@ async function deleteForm(formId, btn) {
 async function loadResponses(formId) {
     const tbody = document.getElementById("responses-table-body");
     const chartsContainer = document.getElementById("analytics-charts-container");
-    const exportBtn = document.getElementById("btn-export-csv");
+    const exportBtn = document.getElementById("menu-download-csv");
     
     if (tbody) {
         tbody.innerHTML = `<tr><td colspan="100" style="text-align:center; padding: 32px;"><span class="btn-spinner spinner-dark" style="width: 24px; height: 24px; border-width: 2.5px;"></span> Loading submissions...</td></tr>`;
@@ -622,6 +637,9 @@ async function loadResponses(formId) {
     if (exportBtn) {
         exportBtn.disabled = true;
     }
+    
+    // Sync the sheets state for UI controls
+    updateSheetsUIState();
     
     try {
         const response = await fetch(`/api/forms/${formId}/responses`);
@@ -2389,24 +2407,43 @@ function exportResponsesToCSV() {
             } else if (Array.isArray(ans)) {
                 row.push(ans.join("; "));
             } else {
-                row.push(ans.toString());
+                const valStr = ans.toString();
+                if (/^\+?\d{8,}$/.test(valStr) || /^0\d+$/.test(valStr)) {
+                    row.push(`="${valStr}"`);
+                } else {
+                    row.push(valStr);
+                }
             }
         });
         rows.push(row);
     });
     
-    // Format csv
-    const csvContent = "data:text/csv;charset=utf-8," 
-        + rows.map(r => r.map(cell => `"${cell.replace(/"/g, '""')}"`).join(",")).join("\n");
-        
-    const encodedUri = encodeURI(csvContent);
+    // Format CSV content
+    const csvString = rows.map(r => r.map(cell => {
+        const strCell = cell === null || cell === undefined ? "" : String(cell);
+        // Double-quote cells containing quotes, commas, or newlines, and escape internal quotes
+        if (strCell.includes('"') || strCell.includes(',') || strCell.includes('\n') || strCell.includes('\r')) {
+            return `"${strCell.replace(/"/g, '""')}"`;
+        }
+        return strCell;
+    }).join(",")).join("\r\n");
+    
+    // Create Blob with UTF-8 Byte Order Mark (BOM) to ensure correct character encoding in Excel & Sheets
+    const blob = new Blob(["\ufeff" + csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `${activeForm.title.toLowerCase().replace(/[^a-z0-9]/g, "_")}_responses.csv`);
+    const safeTitle = (activeForm.title || "untitled_form").toLowerCase().replace(/[^a-z0-9]/g, "_");
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${safeTitle}_responses.csv`);
     document.body.appendChild(link);
     
     link.click();
+    
+    // Clean up
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
 
 // =========================================================================
@@ -2914,4 +2951,302 @@ function loadDemoForm() {
     activePage = 1;
     setupBuilderWorkspace();
     switchTab("builder");
+}
+
+// =========================================================================
+// GOOGLE SHEETS & RESPONSES MORE ACTIONS
+// =========================================================================
+function setupResponsesActionsListeners() {
+    const btnMore = document.getElementById("btn-responses-more");
+    const dropdownMenu = document.getElementById("responses-menu-dropdown");
+    
+    if (btnMore && dropdownMenu) {
+        btnMore.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isOpen = dropdownMenu.style.display === "block";
+            dropdownMenu.style.display = isOpen ? "none" : "block";
+        });
+        
+        document.addEventListener("click", () => {
+            dropdownMenu.style.display = "none";
+        });
+    }
+    
+    // Bind Sheets connection modal events
+    const btnLinkSheets = document.getElementById("btn-link-sheets");
+    const menuLinkSheets = document.getElementById("menu-link-sheets");
+    if (btnLinkSheets) btnLinkSheets.addEventListener("click", openSheetsModal);
+    if (menuLinkSheets) menuLinkSheets.addEventListener("click", openSheetsModal);
+    
+    const closeSheetsBtn = document.getElementById("close-sheets-modal");
+    if (closeSheetsBtn) closeSheetsBtn.addEventListener("click", closeSheetsModal);
+    
+    const modalLinkBtn = document.getElementById("btn-modal-link-sheets");
+    if (modalLinkBtn) modalLinkBtn.addEventListener("click", linkFormToSheets);
+    
+    const modalUnlinkBtn = document.getElementById("btn-modal-unlink-sheets");
+    if (modalUnlinkBtn) modalUnlinkBtn.addEventListener("click", unlinkFormFromSheets);
+    
+    const menuUnlinkSheets = document.getElementById("menu-unlink-sheets");
+    if (menuUnlinkSheets) menuUnlinkSheets.addEventListener("click", unlinkFormFromSheets);
+    
+    // Copy formula helper
+    const btnCopyFormula = document.getElementById("btn-copy-formula");
+    if (btnCopyFormula) {
+        btnCopyFormula.addEventListener("click", () => {
+            const formulaInput = document.getElementById("sheets-formula-input");
+            formulaInput.select();
+            
+            let copySuccess = false;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(formulaInput.value)
+                    .then(() => { updateCopyUI(); })
+                    .catch(() => { fallbackCopy(); });
+            } else {
+                fallbackCopy();
+            }
+            
+            function fallbackCopy() {
+                try {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = formulaInput.value;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    const successful = document.execCommand("copy");
+                    document.body.removeChild(textArea);
+                    if (successful) updateCopyUI();
+                } catch (err) {
+                    console.error("Fallback copy failed:", err);
+                }
+            }
+            
+            function updateCopyUI() {
+                const originalText = btnCopyFormula.innerText;
+                btnCopyFormula.innerText = "Copied!";
+                btnCopyFormula.style.background = "#e6f4ea";
+                setTimeout(() => {
+                    btnCopyFormula.innerText = originalText;
+                    btnCopyFormula.style.background = "";
+                }, 2000);
+            }
+        });
+    }
+    
+    // Other actions
+    const menuDownloadCsv = document.getElementById("menu-download-csv");
+    if (menuDownloadCsv) menuDownloadCsv.addEventListener("click", exportResponsesToCSV);
+    
+    const menuPrintResponses = document.getElementById("menu-print-responses");
+    if (menuPrintResponses) menuPrintResponses.addEventListener("click", printResponses);
+    
+    const menuDeleteResponses = document.getElementById("menu-delete-responses");
+    if (menuDeleteResponses) menuDeleteResponses.addEventListener("click", deleteResponses);
+    
+    // Close sheets modal on overlay backdrop click
+    const sheetsModal = document.getElementById("sheets-modal");
+    if (sheetsModal) {
+        sheetsModal.addEventListener("click", (e) => {
+            if (e.target.id === "sheets-modal") closeSheetsModal();
+        });
+    }
+}
+
+async function openSheetsModal() {
+    if (!activeForm || !activeForm.id) return;
+    
+    const modal = document.getElementById("sheets-modal");
+    const formulaInput = document.getElementById("sheets-formula-input");
+    const linkBtn = document.getElementById("btn-modal-link-sheets");
+    const unlinkBtn = document.getElementById("btn-modal-unlink-sheets");
+    
+    // Close dropdown menu if open
+    const dropdownMenu = document.getElementById("responses-menu-dropdown");
+    if (dropdownMenu) dropdownMenu.style.display = "none";
+    
+    // Update modal state based on whether the form is currently linked
+    if (activeForm.isLinkedToSheets && activeForm.responseShareToken) {
+        const importUrl = `${window.location.origin}/api/forms/${activeForm.id}/export/csv?secret=${activeForm.responseShareToken}`;
+        formulaInput.value = `=IMPORTDATA("${importUrl}")`;
+        linkBtn.style.display = "none";
+        unlinkBtn.style.display = "block";
+    } else {
+        formulaInput.value = "Form not linked. Click 'Link Sheet' to generate formula.";
+        linkBtn.style.display = "block";
+        unlinkBtn.style.display = "none";
+    }
+    
+    modal.style.display = "flex";
+}
+
+function closeSheetsModal() {
+    document.getElementById("sheets-modal").style.display = "none";
+}
+
+async function linkFormToSheets() {
+    if (!activeForm || !activeForm.id) return;
+    
+    const linkBtn = document.getElementById("btn-modal-link-sheets");
+    const originalText = linkBtn.innerText;
+    linkBtn.disabled = true;
+    linkBtn.innerText = "Linking...";
+    
+    try {
+        const res = await fetch(`/api/forms/${activeForm.id}/link-sheets`, {
+            method: "POST"
+        });
+        if (!res.ok) throw new Error("Failed to link form to Google Sheets");
+        
+        const data = await res.json();
+        
+        // Update activeForm in memory
+        activeForm.isLinkedToSheets = true;
+        activeForm.responseShareToken = data.responseShareToken;
+        
+        // Update inside formsList list as well
+        const fIdx = formsList.findIndex(f => f.id === activeForm.id);
+        if (fIdx !== -1) {
+            formsList[fIdx].isLinkedToSheets = true;
+            formsList[fIdx].responseShareToken = data.responseShareToken;
+        }
+        
+        // Update UI states
+        updateSheetsUIState();
+        
+        // Refresh modal view
+        openSheetsModal();
+        
+        alert("Google Sheets connection generated successfully! Copy the formula below and paste it into A1 of your Google Sheet.");
+    } catch (err) {
+        console.error(err);
+        alert("Error linking Google Sheet: " + err.message);
+    } finally {
+        linkBtn.disabled = false;
+        linkBtn.innerText = originalText;
+    }
+}
+
+async function unlinkFormFromSheets() {
+    if (!activeForm || !activeForm.id) return;
+    
+    const confirmUnlink = confirm("Are you sure you want to unlink this form?\n\nExisting Google Sheets using the formula will no longer be able to sync new responses.");
+    if (!confirmUnlink) return;
+    
+    const unlinkBtn = document.getElementById("btn-modal-unlink-sheets");
+    const originalText = unlinkBtn.innerText;
+    unlinkBtn.disabled = true;
+    unlinkBtn.innerText = "Unlinking...";
+    
+    try {
+        const res = await fetch(`/api/forms/${activeForm.id}/unlink-sheets`, {
+            method: "POST"
+        });
+        if (!res.ok) throw new Error("Failed to unlink form");
+        
+        // Update activeForm in memory
+        activeForm.isLinkedToSheets = false;
+        activeForm.responseShareToken = null;
+        
+        const fIdx = formsList.findIndex(f => f.id === activeForm.id);
+        if (fIdx !== -1) {
+            formsList[fIdx].isLinkedToSheets = false;
+            formsList[fIdx].responseShareToken = null;
+        }
+        
+        updateSheetsUIState();
+        closeSheetsModal();
+        
+        alert("Form unlinked from Google Sheets successfully.");
+    } catch (err) {
+        console.error(err);
+        alert("Error unlinking: " + err.message);
+    } finally {
+        unlinkBtn.disabled = false;
+        unlinkBtn.innerText = originalText;
+    }
+}
+
+function updateSheetsUIState() {
+    const mainBtnText = document.getElementById("sheets-btn-text");
+    const unlinkMenuItem = document.getElementById("menu-unlink-sheets");
+    const linkSheetsBtn = document.getElementById("btn-link-sheets");
+    
+    if (!activeForm || !activeForm.id) {
+        if (mainBtnText) mainBtnText.innerText = "Link Sheets";
+        if (linkSheetsBtn) {
+            linkSheetsBtn.disabled = true;
+            linkSheetsBtn.style.opacity = "0.5";
+            linkSheetsBtn.style.cursor = "not-allowed";
+        }
+        if (unlinkMenuItem) {
+            unlinkMenuItem.disabled = true;
+            unlinkMenuItem.classList.add("disabled");
+            unlinkMenuItem.style.cursor = "not-allowed";
+            unlinkMenuItem.style.color = "var(--text-color-muted)";
+        }
+        return;
+    }
+    
+    if (linkSheetsBtn) {
+        linkSheetsBtn.disabled = false;
+        linkSheetsBtn.style.opacity = "1";
+        linkSheetsBtn.style.cursor = "pointer";
+    }
+    
+    if (activeForm.isLinkedToSheets) {
+        if (mainBtnText) mainBtnText.innerText = "Linked";
+        if (linkSheetsBtn) {
+            linkSheetsBtn.style.background = "#0b8043"; // darker green for active
+        }
+        if (unlinkMenuItem) {
+            unlinkMenuItem.disabled = false;
+            unlinkMenuItem.classList.remove("disabled");
+            unlinkMenuItem.style.cursor = "pointer";
+            unlinkMenuItem.style.color = "var(--text-color-primary)";
+        }
+    } else {
+        if (mainBtnText) mainBtnText.innerText = "Link Sheets";
+        if (linkSheetsBtn) {
+            linkSheetsBtn.style.background = "#0f9d58"; // standard sheet green
+        }
+        if (unlinkMenuItem) {
+            unlinkMenuItem.disabled = true;
+            unlinkMenuItem.classList.add("disabled");
+            unlinkMenuItem.style.cursor = "not-allowed";
+            unlinkMenuItem.style.color = "var(--text-color-muted)";
+        }
+    }
+}
+
+function printResponses() {
+    const printTitle = document.getElementById("print-form-title");
+    if (printTitle && activeForm) {
+        printTitle.innerText = "Form: " + (activeForm.title || "Untitled Form");
+    }
+    window.print();
+}
+
+async function deleteResponses() {
+    if (!activeForm || !activeForm.id) return;
+    const count = activeFormResponses.length;
+    if (count === 0) {
+        alert("There are no responses to delete.");
+        return;
+    }
+    
+    const confirmDelete = confirm(`Are you sure you want to permanently delete all ${count} response(s)?\n\nThis action is irreversible and will delete all submissions data from the database.`);
+    if (!confirmDelete) return;
+    
+    try {
+        const res = await fetch(`/api/forms/${activeForm.id}/responses`, {
+            method: "DELETE"
+        });
+        if (!res.ok) throw new Error("Failed to delete responses");
+        
+        alert("All responses successfully deleted.");
+        // Reload responses
+        await loadResponses(activeForm.id);
+    } catch (err) {
+        console.error(err);
+        alert("Error deleting responses: " + err.message);
+    }
 }

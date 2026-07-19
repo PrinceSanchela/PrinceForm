@@ -9,6 +9,185 @@
     <link class="cache-buster-css" rel="stylesheet" href="/static/css/dashboard.css?v=3.0">
     <link rel="stylesheet" href="/static/css/form.css">
     <link rel="shortcut icon" type="image/x-icon" href="/static/logo.png">
+    
+    <style>
+        .btn-sheets {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #0f9d58;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        .btn-sheets:hover {
+            background: #0b8043;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transform: translateY(-1px);
+        }
+        .btn-sheets:active {
+            transform: translateY(0);
+        }
+        .btn-sheets:disabled {
+            background: #cbd5e1 !important;
+            color: #94a3b8 !important;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+        .dropdown-wrapper {
+            position: relative;
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 40px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            min-width: 240px;
+            padding: 6px 0;
+            animation: slideDownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            border: none;
+            background: none;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            color: var(--text-color-primary);
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.2s;
+        }
+        .dropdown-item:hover {
+            background: #f3f4f6;
+        }
+        .dropdown-item:disabled, .dropdown-item.disabled {
+            color: var(--text-color-muted) !important;
+            cursor: not-allowed !important;
+            background: none !important;
+            opacity: 0.5;
+        }
+        @keyframes slideDownIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media print {
+            /* Reset body and wrapper styles */
+            body, html {
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            
+            /* Hide non-print containers and components */
+            .marketing-sidebar,
+            .app-sidebar,
+            .app-header,
+            .app-tabs-nav,
+            .top-nav,
+            #builder-tab,
+            #forms-tab,
+            #settings-tab,
+            .section-actions,
+            .stat-card,
+            #sheets-modal,
+            #share-modal,
+            .aura-container,
+            #analytics-charts-title,
+            #analytics-charts-container,
+            footer {
+                display: none !important;
+            }
+            
+            /* Ensure layout wrappers do not constrain width/height or apply styling */
+            .dashboard-wrapper-split,
+            .app-card-stack-wrapper,
+            .app-dashboard-card,
+            .app-card-content,
+            .responses-container,
+            #responses-tab {
+                display: block !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                border-radius: 0 !important;
+            }
+            
+            /* Print Header Branding */
+            .print-header {
+                display: block !important;
+                margin-bottom: 24px;
+                border-bottom: 2px solid #111827;
+                padding-bottom: 12px;
+            }
+            
+            /* Print Footer Branding */
+            .print-footer {
+                display: block !important;
+                margin-top: 40px !important;
+                border-top: 1px solid #111827 !important;
+                padding-top: 12px !important;
+                text-align: center !important;
+            }
+            .print-footer p {
+                font-family: 'Outfit', sans-serif !important;
+                font-size: 10pt !important;
+                color: #374151 !important;
+                margin: 0 !important;
+            }
+            
+            /* Table formatting */
+            .table-wrapper {
+                box-shadow: none !important;
+                border: none !important;
+                overflow: visible !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .response-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+            
+            .response-table th, .response-table td {
+                border: 1px solid #000000 !important;
+                padding: 8px !important;
+                font-size: 10pt !important;
+                text-align: left !important;
+                color: #000000 !important;
+            }
+            
+            .response-table th {
+                background-color: #f3f4f6 !important;
+                font-weight: bold !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Ultra-Premium Glowing Aura Background Blobs -->
@@ -561,6 +740,11 @@
         <!-- VIEW 3: RESPONSES & DATA ANALYTICS -->
         <!-- ================================================================= -->
         <main id="responses-tab" class="tab-content">
+            <!-- Print Header (Hidden on screen, shown on print) -->
+            <div class="print-header" style="display: none;">
+                <h1 style="font-family: 'Outfit', sans-serif; font-size: 24px; margin: 0; color: #111827;">Prince Form - Responses Report</h1>
+                <p id="print-form-title" style="font-size: 14px; margin: 4px 0 16px 0; color: #4b5563; font-weight: 500;">Form: </p>
+            </div>
             
             <!-- Overall Stats Summary Cards -->
             <div class="responses-summary">
@@ -572,9 +756,68 @@
             
             <!-- Submissions Table -->
             <section class="responses-container animate-fade-in">
-                <div class="section-actions">
-                    <h3 class="gradient-text" style="font-family:'Outfit'; font-size:1.3rem;">Individual Submissions Table</h3>
-                    <button id="btn-export-csv" class="btn btn-secondary">Export data as CSV</button>
+                <div class="section-actions" style="display:flex; justify-content:between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:16px;">
+                    <h3 class="gradient-text" style="font-family:'Outfit'; font-size:1.3rem; margin:0;">Individual Submissions Table</h3>
+                    <div style="display:flex; align-items:center; gap:12px; position:relative; margin-left:auto;">
+                        <!-- Google Sheets Link Button -->
+                        <button id="btn-link-sheets" class="btn-sheets" title="Select destination for responses / Link Google Sheets">
+                            <svg style="width:16px; height:16px;" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2M9 17H7v-2h2zm0-4H7v-2h2zm0-4H7V7h2zm8 8h-6v-2h6zm0-4h-6v-2h6zm0-4h-6V7h6z"/>
+                            </svg>
+                            <span id="sheets-btn-text">Link Sheets</span>
+                        </button>
+                        
+                        <!-- Three-dot settings menu dropdown wrapper -->
+                        <div class="dropdown-wrapper">
+                            <button id="btn-responses-more" class="btn btn-secondary" style="display:flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border-radius:50%; border:1px solid var(--border-color); background:#ffffff; cursor:pointer; color:var(--text-color-secondary); transition:all 0.2s;" title="More options">
+                                <svg style="width:18px; height:18px;" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                                </svg>
+                            </button>
+                            
+                            <!-- Dropdown Menu Content -->
+                            <div id="responses-menu-dropdown" class="dropdown-menu">
+                                <button class="dropdown-item" id="menu-link-sheets">
+                                    <svg style="width:16px; height:16px; color:var(--text-color-muted);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/>
+                                    </svg>
+                                    <span>Select destination for responses</span>
+                                </button>
+                                
+                                <button class="dropdown-item" id="menu-unlink-sheets">
+                                    <svg style="width:16px; height:16px; color:inherit;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"/>
+                                    </svg>
+                                    <span>Unlink form</span>
+                                </button>
+                                
+                                <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+                                
+                                <button class="dropdown-item" id="menu-download-csv">
+                                    <svg style="width:16px; height:16px; color:var(--text-color-muted);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+                                    </svg>
+                                    <span>Download responses (.csv)</span>
+                                </button>
+                                
+                                <button class="dropdown-item" id="menu-print-responses">
+                                    <svg style="width:16px; height:16px; color:var(--text-color-muted);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.567-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-14.326 0C3.768 7.28 3 8.215 3 9.296v6.454a2.25 2.25 0 0 0 2.25 2.25h1.091M9 10.125h6M9 12.75h3"/>
+                                    </svg>
+                                    <span>Print all responses</span>
+                                </button>
+                                
+                                <div style="height:1px; background:var(--border-color); margin:4px 0;"></div>
+                                
+                                <button class="dropdown-item" id="menu-delete-responses" style="color:#dc2626;">
+                                    <svg style="width:16px; height:16px; color:inherit;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.34 9m-4.78 0L9 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
+                                    </svg>
+                                    <span>Delete all responses</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="table-wrapper">
                     <table class="response-table">
@@ -590,8 +833,15 @@
                 </div>
             </section>
             
+            <!-- Print Footer (Hidden on screen, shown on print) -->
+            <div class="print-footer" style="display: none;">
+                <p>
+                    Made By <span style="font-weight: 700; color: #673ab7;">Prince Sanchela</span> Custom Branded Forms
+                </p>
+            </div>
+            
             <!-- Submissions Visualized breakdown -->
-            <h3 class="gradient-text animate-fade-in" style="font-family:'Outfit'; font-size:1.3rem; margin-bottom:12px;">Submissions Analytical Breakdown</h3>
+            <h3 id="analytics-charts-title" class="gradient-text animate-fade-in" style="font-family:'Outfit'; font-size:1.3rem; margin-bottom:12px;">Submissions Analytical Breakdown</h3>
             <section class="charts-grid" id="analytics-charts-container">
                 <!-- Custom charts rendered dynamically -->
             </section>
@@ -633,8 +883,49 @@
             </div>
         </div>
     </div>
+
+    <!-- Google Sheets Link Modal Overlay -->
+    <div id="sheets-modal" class="modal-overlay" style="display:none;">
+        <div class="form-card-base card-style-elevated" style="width:100%; max-width:480px; padding:28px; position:relative; background:#ffffff; box-shadow:var(--shadow-lg);">
+            <button id="close-sheets-modal" style="position:absolute; top:12px; right:16px; background:none; border:none; font-size:1.6rem; cursor:pointer; color:var(--text-color-secondary); transition:color 0.2s;" onmouseover="this.style.color='var(--text-color-primary)'" onmouseout="this.style.color='var(--text-color-secondary)'">&times;</button>
+            
+            <h3 style="font-family:'Outfit'; font-size:1.35rem; margin-bottom:12px; color:var(--text-color-primary); display:flex; align-items:center; gap:8px; text-align:left;">
+                <svg style="width:24px; height:24px; color:#0f9d58;" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2M9 17H7v-2h2zm0-4H7v-2h2zm0-4H7V7h2zm8 8h-6v-2h6zm0-4h-6v-2h6zm0-4h-6V7h6z"/>
+                </svg>
+                Select destination for responses
+            </h3>
+            
+            <div style="text-align:left; margin-bottom:20px;">
+                <p style="font-size:0.85rem; color:var(--text-color-secondary); line-height:1.5; margin-bottom:16px;">
+                    Link this form directly to any Google Sheet. Responders' submissions will be synced and updated dynamically in real-time.
+                </p>
+                
+                <div style="background:#f8f9fa; border:1px solid var(--border-color); border-radius:8px; padding:16px; margin-bottom:16px;">
+                    <strong style="font-size:0.8rem; color:var(--text-color-primary); display:block; margin-bottom:6px;">Google Sheets Formula Connection:</strong>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="sheets-formula-input" class="input-text" readonly style="font-size:0.8rem; font-family:monospace; background:#e9ecef; color:#212529; flex-grow:1;" onclick="this.select();">
+                        <button id="btn-copy-formula" class="btn btn-secondary" style="padding:6px 12px; font-size:0.8rem; white-space:nowrap; border-color:#0f9d58; color:#0f9d58;">Copy</button>
+                    </div>
+                </div>
+                
+                <strong style="font-size:0.8rem; color:var(--text-color-primary); display:block; margin-bottom:4px;">How to link:</strong>
+                <ol style="font-size:0.8rem; color:var(--text-color-secondary); padding-left:18px; margin:0; line-height:1.5;">
+                    <li>Copy the formula above.</li>
+                    <li>Open your Google Sheet (new or existing).</li>
+                    <li>Select cell <strong>A1</strong> and paste (Ctrl+V or Cmd+V).</li>
+                    <li>Allow permission if Google Sheets requests it (the sheet will auto-sync live).</li>
+                </ol>
+            </div>
+            
+            <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid var(--border-color); padding-top:18px; margin-top:20px;">
+                <button id="btn-modal-unlink-sheets" class="btn btn-secondary" style="border-color:#dc2626; color:#dc2626;">Unlink Form</button>
+                <button id="btn-modal-link-sheets" class="btn btn-primary" style="background:#0f9d58; border-color:#0f9d58;">Link Sheet</button>
+            </div>
+        </div>
+    </div>
     
     <!-- Script code source -->
-    <script src="/static/js/dashboard.js?v=3.0"></script>
+    <script src="/static/js/dashboard.js?v=3.8"></script>
 </body>
 </html>
