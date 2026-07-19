@@ -2399,7 +2399,7 @@ function exportResponsesToCSV() {
     // Rows
     const rows = [headers];
     activeFormResponses.forEach(resp => {
-        const row = ["\t" + new Date(resp.submittedAt).toLocaleString()];
+        const row = ["\u200B" + new Date(resp.submittedAt).toLocaleString()];
         activeForm.questions.forEach(q => {
             const ans = resp.answers[q.id];
             if (ans === undefined || ans === null) {
@@ -2409,7 +2409,7 @@ function exportResponsesToCSV() {
             } else {
                 const valStr = ans.toString();
                 if (/^\+?\d{8,}$/.test(valStr) || /^0\d+$/.test(valStr)) {
-                    row.push("\t" + valStr);
+                    row.push("\u200B" + valStr);
                 } else {
                     row.push(valStr);
                 }
@@ -3066,7 +3066,7 @@ async function openSheetsModal() {
     // Update modal state based on whether the form is currently linked
     if (activeForm.isLinkedToSheets && activeForm.responseShareToken) {
         const importUrl = `${window.location.origin}/api/forms/${activeForm.id}/export/csv?secret=${activeForm.responseShareToken}`;
-        formulaInput.value = `=IMPORTDATA("${importUrl}")`;
+        formulaInput.value = `=IMPORTDATA(CONCATENATE("${importUrl}&t=", INT(NOW()*24*60)))`;
         linkBtn.style.display = "none";
         unlinkBtn.style.display = "block";
     } else {
