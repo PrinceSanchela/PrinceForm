@@ -902,19 +902,29 @@
                 </p>
                 
                 <div style="background:#f8f9fa; border:1px solid var(--border-color); border-radius:8px; padding:16px; margin-bottom:16px;">
-                    <strong style="font-size:0.8rem; color:var(--text-color-primary); display:block; margin-bottom:6px;">Google Sheets Formula Connection:</strong>
-                    <div style="display:flex; gap:8px;">
-                        <input type="text" id="sheets-formula-input" class="input-text" readonly style="font-size:0.8rem; font-family:monospace; background:#e9ecef; color:#212529; flex-grow:1;" onclick="this.select();">
-                        <button id="btn-copy-formula" class="btn btn-secondary" style="padding:6px 12px; font-size:0.8rem; white-space:nowrap; border-color:#0f9d58; color:#0f9d58;">Copy</button>
+                    <div style="margin-bottom:12px;">
+                        <strong style="font-size:0.8rem; color:var(--text-color-primary); display:block; margin-bottom:4px;">🔌 Option 1: Auto-Sync (Updates every minute in background)</strong>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="sheets-formula-input" class="input-text" readonly style="font-size:0.8rem; font-family:monospace; background:#e9ecef; color:#212529; flex-grow:1;" onclick="this.select();">
+                            <button id="btn-copy-formula" class="btn btn-secondary" style="padding:6px 12px; font-size:0.8rem; white-space:nowrap; border-color:#0f9d58; color:#0f9d58;">Copy</button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <strong style="font-size:0.8rem; color:var(--text-color-primary); display:block; margin-bottom:4px;">⚡ Option 2: Instant Sync Toggle (Refreshes instantly on demand)</strong>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="sheets-formula-input-instant" class="input-text" readonly style="font-size:0.8rem; font-family:monospace; background:#e9ecef; color:#212529; flex-grow:1;" onclick="this.select();">
+                            <button id="btn-copy-formula-instant" class="btn btn-secondary" style="padding:6px 12px; font-size:0.8rem; white-space:nowrap; border-color:#0f9d58; color:#0f9d58;">Copy</button>
+                        </div>
                     </div>
                 </div>
                 
                 <strong style="font-size:0.8rem; color:var(--text-color-primary); display:block; margin-bottom:4px;">How to link:</strong>
                 <ol style="font-size:0.8rem; color:var(--text-color-secondary); padding-left:18px; margin:0; line-height:1.5;">
-                    <li>Copy the formula above.</li>
+                    <li>Copy one of the formulas above.</li>
                     <li>Open your Google Sheet (new or existing).</li>
-                    <li>Select cell <strong>A1</strong> and paste (Ctrl+V or Cmd+V).</li>
-                    <li>Allow permission if Google Sheets requests it (the sheet will auto-sync live).</li>
+                    <li><strong>For Option 1:</strong> Select cell <strong>A1</strong> and paste. It auto-updates in the background.</li>
+                    <li><strong>For Option 2:</strong> Right-click cell <strong>B1</strong>, go to **Insert -> Checkbox**. Then paste the formula in cell <strong>A1</strong>. Toggling the checkbox in **B1** instantly pulls the newest responses!</li>
                 </ol>
             </div>
             
@@ -926,6 +936,6 @@
     </div>
     
     <!-- Script code source -->
-    <script src="/static/js/dashboard.js?v=3.9"></script>
+    <script src="/static/js/dashboard.js?v=4.0"></script>
 </body>
 </html>

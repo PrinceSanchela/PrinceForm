@@ -2997,39 +2997,54 @@ function setupResponsesActionsListeners() {
             const formulaInput = document.getElementById("sheets-formula-input");
             formulaInput.select();
             
-            let copySuccess = false;
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(formulaInput.value)
-                    .then(() => { updateCopyUI(); })
-                    .catch(() => { fallbackCopy(); });
+                    .then(() => { updateCopyUI(btnCopyFormula); })
+                    .catch(() => { fallbackCopy(formulaInput.value, btnCopyFormula); });
             } else {
-                fallbackCopy();
-            }
-            
-            function fallbackCopy() {
-                try {
-                    const textArea = document.createElement("textarea");
-                    textArea.value = formulaInput.value;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    const successful = document.execCommand("copy");
-                    document.body.removeChild(textArea);
-                    if (successful) updateCopyUI();
-                } catch (err) {
-                    console.error("Fallback copy failed:", err);
-                }
-            }
-            
-            function updateCopyUI() {
-                const originalText = btnCopyFormula.innerText;
-                btnCopyFormula.innerText = "Copied!";
-                btnCopyFormula.style.background = "#e6f4ea";
-                setTimeout(() => {
-                    btnCopyFormula.innerText = originalText;
-                    btnCopyFormula.style.background = "";
-                }, 2000);
+                fallbackCopy(formulaInput.value, btnCopyFormula);
             }
         });
+    }
+    
+    const btnCopyFormulaInstant = document.getElementById("btn-copy-formula-instant");
+    if (btnCopyFormulaInstant) {
+        btnCopyFormulaInstant.addEventListener("click", () => {
+            const formulaInputInstant = document.getElementById("sheets-formula-input-instant");
+            formulaInputInstant.select();
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(formulaInputInstant.value)
+                    .then(() => { updateCopyUI(btnCopyFormulaInstant); })
+                    .catch(() => { fallbackCopy(formulaInputInstant.value, btnCopyFormulaInstant); });
+            } else {
+                fallbackCopy(formulaInputInstant.value, btnCopyFormulaInstant);
+            }
+        });
+    }
+    
+    function fallbackCopy(text, btn) {
+        try {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            const successful = document.execCommand("copy");
+            document.body.removeChild(textArea);
+            if (successful) updateCopyUI(btn);
+        } catch (err) {
+            console.error("Fallback copy failed:", err);
+        }
+    }
+    
+    function updateCopyUI(btn) {
+        const originalText = btn.innerText;
+        btn.innerText = "Copied!";
+        btn.style.background = "#e6f4ea";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "";
+        }, 2000);
     }
     
     // Other actions
@@ -3056,6 +3071,7 @@ async function openSheetsModal() {
     
     const modal = document.getElementById("sheets-modal");
     const formulaInput = document.getElementById("sheets-formula-input");
+    const formulaInputInstant = document.getElementById("sheets-formula-input-instant");
     const linkBtn = document.getElementById("btn-modal-link-sheets");
     const unlinkBtn = document.getElementById("btn-modal-unlink-sheets");
     
@@ -3067,10 +3083,13 @@ async function openSheetsModal() {
     if (activeForm.isLinkedToSheets && activeForm.responseShareToken) {
         const importUrl = `${window.location.origin}/api/forms/${activeForm.id}/export/csv?secret=${activeForm.responseShareToken}`;
         formulaInput.value = `=IMPORTDATA(CONCATENATE("${importUrl}&t=", INT(NOW()*24*60)))`;
+        formulaInputInstant.value = `=IMPORTDATA(CONCATENATE("${importUrl}&t=", B1))`;
         linkBtn.style.display = "none";
         unlinkBtn.style.display = "block";
     } else {
-        formulaInput.value = "Form not linked. Click 'Link Sheet' to generate formula.";
+        const placeholder = "Form not linked. Click 'Link Sheet' to generate formula.";
+        formulaInput.value = placeholder;
+        formulaInputInstant.value = placeholder;
         linkBtn.style.display = "block";
         unlinkBtn.style.display = "none";
     }
