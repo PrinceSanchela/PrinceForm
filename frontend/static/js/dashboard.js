@@ -2399,7 +2399,7 @@ function exportResponsesToCSV() {
     // Rows
     const rows = [headers];
     activeFormResponses.forEach(resp => {
-        const row = [new Date(resp.submittedAt).toISOString()];
+        const row = ["\t" + new Date(resp.submittedAt).toLocaleString()];
         activeForm.questions.forEach(q => {
             const ans = resp.answers[q.id];
             if (ans === undefined || ans === null) {
@@ -2409,7 +2409,7 @@ function exportResponsesToCSV() {
             } else {
                 const valStr = ans.toString();
                 if (/^\+?\d{8,}$/.test(valStr) || /^0\d+$/.test(valStr)) {
-                    row.push(`="${valStr}"`);
+                    row.push("\t" + valStr);
                 } else {
                     row.push(valStr);
                 }

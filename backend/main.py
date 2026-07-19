@@ -1322,9 +1322,9 @@ async def export_csv(form_id: str, secret: str):
         submitted_at = resp.get("submittedAt")
         submitted_at_str = ""
         if isinstance(submitted_at, datetime):
-            submitted_at_str = submitted_at.strftime("%Y-%m-%d %H:%M:%S")
+            submitted_at_str = "\t" + submitted_at.strftime("%Y-%m-%d %H:%M:%S")
         elif isinstance(submitted_at, str):
-            submitted_at_str = submitted_at
+            submitted_at_str = "\t" + submitted_at
             
         answers = resp.get("answers", {})
         row = [submitted_at_str]
@@ -1338,7 +1338,7 @@ async def export_csv(form_id: str, secret: str):
                 val_str = str(ans)
                 # Prevent Excel/Sheets auto-formatting phone/long numbers into scientific notation or dropping leading zeroes
                 if re.match(r"^\+?\d{8,}$", val_str) or re.match(r"^0\d+$", val_str):
-                    row.append(f'="{val_str}"')
+                    row.append(f"\t{val_str}")
                 else:
                     row.append(val_str)
         writer.writerow(row)
