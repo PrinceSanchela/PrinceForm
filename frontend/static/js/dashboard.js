@@ -3083,7 +3083,7 @@ async function openSheetsModal() {
     if (activeForm.isLinkedToSheets && activeForm.responseShareToken) {
         const importUrl = `${window.location.origin}/api/forms/${activeForm.id}/export/csv?secret=${activeForm.responseShareToken}`;
         formulaInput.value = `=IMPORTDATA(CONCATENATE("${importUrl}&t=", INT(NOW()*24*60)))`;
-        formulaInputInstant.value = `=IMPORTDATA(CONCATENATE("${importUrl}&t=", B1))`;
+        formulaInputInstant.value = `=IMPORTDATA(CONCATENATE("${importUrl}&t=", A1))`;
         linkBtn.style.display = "none";
         unlinkBtn.style.display = "block";
     } else {

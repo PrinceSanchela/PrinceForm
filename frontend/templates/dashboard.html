@@ -919,12 +919,21 @@
                     </div>
                 </div>
                 
-                <strong style="font-size:0.8rem; color:var(--text-color-primary); display:block; margin-bottom:4px;">How to link:</strong>
-                <ol style="font-size:0.8rem; color:var(--text-color-secondary); padding-left:18px; margin:0; line-height:1.5;">
-                    <li>Copy one of the formulas above.</li>
-                    <li>Open your Google Sheet (new or existing).</li>
-                    <li><strong>For Option 1:</strong> Select cell <strong>A1</strong> and paste. It auto-updates in the background.</li>
-                    <li><strong>For Option 2:</strong> Right-click cell <strong>B1</strong>, go to **Insert -> Checkbox**. Then paste the formula in cell <strong>A1</strong>. Toggling the checkbox in **B1** instantly pulls the newest responses!</li>
+                <strong style="font-size:0.8rem; color:var(--text-color-primary); display:block; margin-bottom:4px;">🔌 Option 1 — How to link (Auto Sync):</strong>
+                <ol style="font-size:0.8rem; color:var(--text-color-secondary); padding-left:18px; margin:0 0 12px 0; line-height:1.8;">
+                    <li>Copy the <strong>Option 1</strong> formula above.</li>
+                    <li>Open your Google Sheet, select cell <strong>A1</strong> and paste (Ctrl+V).</li>
+                    <li>In Google Sheets, click the top menu: <strong>File → Settings → Calculation</strong> → set to <strong>"On change and every minute"</strong>.</li>
+                    <li>Data will refresh automatically every minute in the background.</li>
+                </ol>
+
+                <strong style="font-size:0.8rem; color:var(--text-color-primary); display:block; margin-bottom:4px;">⚡ Option 2 — How to link (Instant Sync on Click):</strong>
+                <ol style="font-size:0.8rem; color:var(--text-color-secondary); padding-left:18px; margin:0; line-height:1.8;">
+                    <li>Click cell <strong>A1</strong> in your Google Sheet.</li>
+                    <li>In the <strong>top menu bar</strong> click: <strong>Insert → Tickbox</strong>. (A tickbox appears in A1.)</li>
+                    <li>Copy the <strong>Option 2</strong> formula above.</li>
+                    <li>Click cell <strong>C1</strong> (not A1 or B1) and paste the formula. Data loads from C1 rightward.</li>
+                    <li>Every time you <strong>click the tickbox in A1</strong>, the sheet instantly pulls the latest submissions!</li>
                 </ol>
             </div>
             
@@ -936,6 +945,6 @@
     </div>
     
     <!-- Script code source -->
-    <script src="/static/js/dashboard.js?v=4.1"></script>
+    <script src="/static/js/dashboard.js?v=4.4"></script>
 </body>
 </html>
