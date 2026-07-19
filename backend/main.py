@@ -2,11 +2,13 @@ import os
 import logging
 import smtplib
 import random
+import csv
+import io
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from contextlib import asynccontextmanager
 from typing import List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import secrets
 import re
 
@@ -44,6 +46,81 @@ def verify_password(password: str, hashed_password: str) -> bool:
     except Exception:
         return False
 
+def hash_otp_code(code: str) -> str:
+    """Hash the OTP code using SHA-256 for secure storage."""
+    return hashlib.sha256(code.encode('utf-8')).hexdigest()
+
+def send_smtp_signup_otp_email(to_email: str, code: str):
+    """Send a signup email verification OTP using SMTP credentials. Falls back to logging if unconfigured."""
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        logger.warning(f"[MOCK MAIL] SMTP is not configured. Signup verification code for {to_email}: {code}")
+        return
+        
+    try:
+        # Create message container
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "Verify your Prince Form Email Address"
+        msg['From'] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_USER}>"
+        msg['To'] = to_email
+        msg['Reply-To'] = "contact.princeform@gmail.com"
+        
+        # HTML body template
+        html = f"""
+        <html>
+        <body style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; padding: 30px; margin: 0;">
+            <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 500px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <tr>
+                    <td style="background-color: #673ab7; padding: 24px; text-align: center;">
+                        <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0; font-family: sans-serif;">Prince Form</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 32px 24px; color: #1e293b;">
+                        <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 16px;">Verify Your Email Address</h2>
+                        <p style="font-size: 15px; line-height: 1.6; margin-bottom: 24px; color: #475569;">
+                            Thank you for creating an account with Prince Form. Use the verification code below to complete your registration. This code will expire in <strong>10 minutes</strong>.
+                        </p>
+                        
+                        <div style="background-color: #f1f5f9; border-radius: 12px; padding: 18px; text-align: center; margin-bottom: 24px;">
+                            <span style="font-size: 32px; font-weight: 800; color: #673ab7; letter-spacing: 4px; font-family: monospace;">{code}</span>
+                        </div>
+                        
+                        <div style="background-color: #f8fafc; border-left: 4px solid #673ab7; border-radius: 6px; padding: 14px; margin-bottom: 24px; font-size: 13px; color: #475569; line-height: 1.5;">
+                            <strong>No-Reply Notice:</strong> This email was sent from a notification-only address (princeform.noreply@gmail.com) that cannot receive incoming mail. Please do not reply directly to this message.
+                        </div>
+                        
+                        <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin-top: 10px;">
+                            If you have questions or need assistance, please contact support at <a href="mailto:contact.princeform@gmail.com" style="color: #673ab7; text-decoration: none;">contact.princeform@gmail.com</a>.
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="background-color: #f8fafc; padding: 16px 24px; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #94a3b8;">
+                        &copy; 2026 Prince Form. All rights reserved.
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(html, 'html'))
+        
+        # Connect and send
+        if settings.SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10)
+        else:
+            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10)
+            server.starttls()
+            
+        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        server.sendmail(settings.SMTP_USER, to_email, msg.as_string())
+        server.quit()
+        logger.info(f"Successfully sent SMTP signup verification email to {to_email}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send SMTP signup verification email to {to_email}: {str(e)}")
+
 def send_smtp_reset_email(to_email: str, code: str):
     """Send a password reset email using SMTP credentials. Falls back to logging if unconfigured."""
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
@@ -56,6 +133,7 @@ def send_smtp_reset_email(to_email: str, code: str):
         msg['Subject'] = "Reset your Prince Form Password"
         msg['From'] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_USER}>"
         msg['To'] = to_email
+        msg['Reply-To'] = "contact.princeform@gmail.com"
         
         # HTML body template
         html = f"""
@@ -78,9 +156,10 @@ def send_smtp_reset_email(to_email: str, code: str):
                             <span style="font-size: 32px; font-weight: 800; color: #0077ff; letter-spacing: 4px; font-family: monospace;">{code}</span>
                         </div>
                         
-                        <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin-bottom: 0;">
-                            If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged.
-                        </p>
+                        <div style="background-color: #f8fafc; border-left: 4px solid #0077ff; border-radius: 6px; padding: 14px; margin-bottom: 24px; font-size: 13px; color: #475569; line-height: 1.5;">
+                            <strong>No-Reply Notice:</strong> This email was sent from a notification-only address (princeform.noreply@gmail.com) that cannot receive incoming mail. Please do not reply directly to this message.
+                        </div>
+                        
                         <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin-top: 10px;">
                             If you have questions, please contact support at <a href="mailto:contact.princeform@gmail.com" style="color: #0077ff; text-decoration: none;">contact.princeform@gmail.com</a>.
                         </p>
@@ -125,6 +204,7 @@ def send_smtp_password_changed_email(to_email: str, username: str):
         msg['Subject'] = "Security Alert: Prince Form Password Changed"
         msg['From'] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_USER}>"
         msg['To'] = to_email
+        msg['Reply-To'] = "contact.princeform@gmail.com"
         
         # HTML body template
         html = f"""
@@ -151,6 +231,10 @@ def send_smtp_password_changed_email(to_email: str, username: str):
                             <span style="color: #b91c1c; font-size: 13px; line-height: 1.4; display: block;">
                                 If you did not request this update, please contact support immediately at <a href="mailto:contact.princeform@gmail.com" style="color: #ef4444; text-decoration: underline;">contact.princeform@gmail.com</a> to lock and recover your account.
                             </span>
+                        </div>
+                        
+                        <div style="background-color: #f8fafc; border-left: 4px solid #ef4444; border-radius: 6px; padding: 14px; margin-bottom: 24px; font-size: 13px; color: #475569; line-height: 1.5;">
+                            <strong>No-Reply Notice:</strong> This email was sent from a notification-only address (princeform.noreply@gmail.com) that cannot receive incoming mail. Please do not reply directly to this message.
                         </div>
                         
                         <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin-bottom: 0;">
@@ -282,7 +366,7 @@ async def add_security_headers(request: Request, call_next):
         "script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data:; "
+        "img-src 'self' data: https:; "
         "connect-src 'self';"
     )
     if is_prod:
@@ -418,8 +502,8 @@ async def get_me(request: Request):
             
     return {"username": session["username"]}
 
-@app.post("/api/auth/signup")
-async def signup(credentials: Dict[str, str], response: Response):
+@app.post("/api/auth/signup-otp")
+async def signup_otp(credentials: Dict[str, str], background_tasks: BackgroundTasks):
     if db.db is None:
         raise HTTPException(status_code=503, detail="Database not connected")
     username = credentials.get("username", "").strip()
@@ -438,7 +522,7 @@ async def signup(credentials: Dict[str, str], response: Response):
     if not ok:
         raise HTTPException(status_code=400, detail=err_msg)
         
-    # Check if user already exists
+    # Check if username already exists
     existing = await db.db["users"].find_one({"username": username})
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
@@ -448,14 +532,169 @@ async def signup(credentials: Dict[str, str], response: Response):
     if existing_email:
         raise HTTPException(status_code=400, detail="Email is already registered")
         
+    # Rate Limit check: max 3 requests per 10 minutes for this email
+    ten_mins_ago = datetime.utcnow() - timedelta(minutes=10)
+    request_count = await db.db["signup_otps"].count_documents({
+        "email": email,
+        "createdAt": {"$gt": ten_mins_ago}
+    })
+    if request_count >= 3:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many verification requests. Please wait a few minutes before trying again."
+        )
+
+    # Cooldown check: 60 seconds
+    last_otp = await db.db["signup_otps"].find_one({
+        "email": email,
+        "expiresAt": {"$gt": datetime.utcnow()}
+    })
+    if last_otp:
+        creation_time = last_otp.get("createdAt") or (last_otp["expiresAt"] - timedelta(minutes=10))
+        time_elapsed = datetime.utcnow() - creation_time
+        if time_elapsed < timedelta(seconds=60):
+            wait_seconds = 60 - int(time_elapsed.total_seconds())
+            raise HTTPException(
+                status_code=429,
+                detail=f"Please wait {wait_seconds} second(s) before requesting another code."
+            )
+            
+    # Generate 6-digit OTP code
+    code = f"{random.randint(100000, 999999)}"
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    code_hash = hash_otp_code(code)
+    
+    # Store OTP in DB (and invalidate any existing codes for this email)
+    await db.db["signup_otps"].delete_many({"email": email})
+    await db.db["signup_otps"].insert_one({
+        "email": email,
+        "username": username,
+        "code_hash": code_hash,
+        "createdAt": datetime.utcnow(),
+        "expiresAt": expires_at,
+        "failedAttempts": 0
+    })
+    
+    # Send code using background tasks to prevent API blocking
+    background_tasks.add_task(send_smtp_signup_otp_email, email, code)
+    
+    # Mask email helper for client feedback
+    def mask_email(email_addr: str) -> str:
+        try:
+            parts = email_addr.split("@")
+            if len(parts) != 2:
+                return "******"
+            name, domain = parts[0], parts[1]
+            masked_name = name[:2] + "***" + name[-1] if len(name) > 2 else name + "***"
+            
+            domain_parts = domain.split(".")
+            if len(domain_parts) >= 2:
+                domain_name = domain_parts[0]
+                domain_suffix = ".".join(domain_parts[1:])
+                masked_domain = domain_name[:2] + "***" + "." + domain_suffix if len(domain_name) > 2 else domain_name + "***." + domain_suffix
+            else:
+                masked_domain = domain
+            return f"{masked_name}@{masked_domain}"
+        except Exception:
+            return "******"
+            
+    masked_email = mask_email(email)
+    
+    resp = {
+        "message": "Verification code sent successfully.",
+        "emailHint": masked_email
+    }
+    
+    # Return code in debugCode for testing when SMTP is not configured
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        resp["debugCode"] = code
+        
+    return resp
+
+@app.post("/api/auth/signup")
+async def signup(credentials: Dict[str, str], response: Response):
+    if db.db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+    username = credentials.get("username", "").strip()
+    password = credentials.get("password", "")
+    email = credentials.get("email", "").strip().lower()
+    code = credentials.get("code", "").strip()
+    
+    if not username or not password or not email or not code:
+        raise HTTPException(status_code=400, detail="Username, email, password, and verification code are required")
+        
+    # Validate email format
+    if not re.match(r"^[\w\.-]+@[\w\.-]+\.\w+$", email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address")
+        
+    # Enforce password strength
+    ok, err_msg = check_password_strength(password)
+    if not ok:
+        raise HTTPException(status_code=400, detail=err_msg)
+        
+    # Check if username already exists
+    existing = await db.db["users"].find_one({"username": username})
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already exists")
+        
+    # Check if email is already taken
+    existing_email = await db.db["users"].find_one({"email": email})
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Email is already registered")
+        
+    # Verify the signup OTP code exists and matches
+    user_code_hash = hash_otp_code(code)
+    otp_record = await db.db["signup_otps"].find_one({
+        "email": email,
+        "code_hash": user_code_hash
+    })
+    
+    if not otp_record:
+        # Check if there is an active code for this email to track guess attempts
+        active_otp = await db.db["signup_otps"].find_one({
+            "email": email,
+            "expiresAt": {"$gt": datetime.utcnow()}
+        })
+        if active_otp:
+            current_failures = active_otp.get("failedAttempts", 0) + 1
+            if current_failures >= 5:
+                # Delete the record entirely upon lockout
+                await db.db["signup_otps"].delete_one({"_id": active_otp["_id"]})
+                raise HTTPException(
+                    status_code=400,
+                    detail="Too many failed verification attempts. This verification code has been invalidated. Please request a new one."
+                )
+            else:
+                await db.db["signup_otps"].update_one(
+                    {"_id": active_otp["_id"]},
+                    {"$set": {"failedAttempts": current_failures}}
+                )
+                attempts_left = 5 - current_failures
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid verification code. {attempts_left} attempt(s) remaining."
+                )
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
+        
+    if datetime.utcnow() > otp_record["expiresAt"]:
+        # Delete expired code
+        await db.db["signup_otps"].delete_one({"_id": otp_record["_id"]})
+        raise HTTPException(status_code=400, detail="Verification code has expired")
+        
+    # Delete OTP from DB immediately upon successful validation
+    await db.db["signup_otps"].delete_one({"_id": otp_record["_id"]})
+        
     # Create user
     password_hash = hash_password(password)
+    now = datetime.utcnow()
     user_dict = {
         "username": username,
         "email": email,
         "password_hash": password_hash,
         "failedAttempts": 0,
-        "lockoutUntil": None
+        "lockoutUntil": None,
+        "createdAt": now,
+        "updatedAt": now
     }
     insert_result = await db.db["users"].insert_one(user_dict)
     user_id = str(insert_result.inserted_id)
@@ -518,7 +757,7 @@ async def login(credentials: Dict[str, str], response: Response):
             # Lockout expired, reset it
             await db.db["users"].update_one(
                 {"_id": user["_id"]},
-                {"$set": {"failedAttempts": 0, "lockoutUntil": None}}
+                {"$set": {"failedAttempts": 0, "lockoutUntil": None, "updatedAt": datetime.utcnow()}}
             )
             user["failedAttempts"] = 0
             user["lockoutUntil"] = None
@@ -531,7 +770,7 @@ async def login(credentials: Dict[str, str], response: Response):
             lockout_time = datetime.utcnow() + timedelta(minutes=15)
             await db.db["users"].update_one(
                 {"_id": user["_id"]},
-                {"$set": {"failedAttempts": failed_attempts, "lockoutUntil": lockout_time}}
+                {"$set": {"failedAttempts": failed_attempts, "lockoutUntil": lockout_time, "updatedAt": datetime.utcnow()}}
             )
             raise HTTPException(
                 status_code=403,
@@ -540,7 +779,7 @@ async def login(credentials: Dict[str, str], response: Response):
         else:
             await db.db["users"].update_one(
                 {"_id": user["_id"]},
-                {"$set": {"failedAttempts": failed_attempts}}
+                {"$set": {"failedAttempts": failed_attempts, "updatedAt": datetime.utcnow()}}
             )
             remaining_attempts = 5 - failed_attempts
             raise HTTPException(
@@ -551,7 +790,7 @@ async def login(credentials: Dict[str, str], response: Response):
     # Success: Reset failed attempts & lockout
     await db.db["users"].update_one(
         {"_id": user["_id"]},
-        {"$set": {"failedAttempts": 0, "lockoutUntil": None}}
+        {"$set": {"failedAttempts": 0, "lockoutUntil": None, "updatedAt": datetime.utcnow()}}
     )
     
     # Create session
@@ -615,11 +854,10 @@ async def forgot_password(payload: Dict[str, str], background_tasks: BackgroundT
     # Cool-down check: prevent requesting a code more than once per 60 seconds
     last_reset = await db.db["password_resets"].find_one({
         "email": email,
-        "used": False,
         "expiresAt": {"$gt": datetime.utcnow()}
     })
     if last_reset:
-        creation_time = last_reset["expiresAt"] - timedelta(minutes=10)
+        creation_time = last_reset.get("createdAt") or (last_reset["expiresAt"] - timedelta(minutes=10))
         time_elapsed = datetime.utcnow() - creation_time
         if time_elapsed < timedelta(seconds=60):
             wait_seconds = 60 - int(time_elapsed.total_seconds())
@@ -631,14 +869,16 @@ async def forgot_password(payload: Dict[str, str], background_tasks: BackgroundT
     # Generate 6-digit recovery code
     code = f"{random.randint(100000, 999999)}"
     expires_at = datetime.utcnow() + timedelta(minutes=10)
+    code_hash = hash_otp_code(code)
     
     # Store code in DB (and invalidate any existing codes for this email)
     await db.db["password_resets"].delete_many({"email": email})
     await db.db["password_resets"].insert_one({
         "email": email,
-        "code": code,
+        "code_hash": code_hash,
+        "createdAt": datetime.utcnow(),
         "expiresAt": expires_at,
-        "used": False
+        "failedAttempts": 0
     })
     
     # Send code using background tasks to prevent API blocking
@@ -668,7 +908,7 @@ async def forgot_password(payload: Dict[str, str], background_tasks: BackgroundT
     
     # Prepare response payload
     resp = {
-        "message": f"Verification code sent successfully.",
+        "message": "Verification code sent successfully.",
         "emailHint": masked_email
     }
     
@@ -712,25 +952,22 @@ async def reset_password(payload: Dict[str, str], background_tasks: BackgroundTa
         raise HTTPException(status_code=400, detail="No recovery email is configured for this account.")
         
     # Verify the reset code exists and matches
+    user_code_hash = hash_otp_code(code)
     reset_record = await db.db["password_resets"].find_one({
         "email": email,
-        "code": code,
-        "used": False
+        "code_hash": user_code_hash
     })
     if not reset_record:
-        # Check if there is an active, unused code for this email to track guess attempts
+        # Check if there is an active code for this email to track guess attempts
         active_reset = await db.db["password_resets"].find_one({
             "email": email,
-            "used": False,
             "expiresAt": {"$gt": datetime.utcnow()}
         })
         if active_reset:
             current_failures = active_reset.get("failedAttempts", 0) + 1
             if current_failures >= 5:
-                await db.db["password_resets"].update_one(
-                    {"_id": active_reset["_id"]},
-                    {"$set": {"used": True}}
-                )
+                # Delete reset document entirely on lockout threshold
+                await db.db["password_resets"].delete_one({"_id": active_reset["_id"]})
                 raise HTTPException(
                     status_code=400,
                     detail="Too many failed attempts. This verification code has been invalidated. Please request a new one."
@@ -748,6 +985,8 @@ async def reset_password(payload: Dict[str, str], background_tasks: BackgroundTa
         raise HTTPException(status_code=400, detail="Invalid or expired verification code")
         
     if datetime.utcnow() > reset_record["expiresAt"]:
+        # Delete expired code
+        await db.db["password_resets"].delete_one({"_id": reset_record["_id"]})
         raise HTTPException(status_code=400, detail="Verification code has expired")
         
     # Hash new password and update user record
@@ -757,15 +996,13 @@ async def reset_password(payload: Dict[str, str], background_tasks: BackgroundTa
         {"$set": {
             "password_hash": password_hash,
             "failedAttempts": 0,
-            "lockoutUntil": None
+            "lockoutUntil": None,
+            "updatedAt": datetime.utcnow()
         }}
     )
     
-    # Mark reset code as used
-    await db.db["password_resets"].update_one(
-        {"_id": reset_record["_id"]},
-        {"$set": {"used": True}}
-    )
+    # Delete reset code from DB immediately upon successful validation
+    await db.db["password_resets"].delete_one({"_id": reset_record["_id"]})
     
     # Send transactional password change confirmation email
     background_tasks.add_task(send_smtp_password_changed_email, email, user["username"])
@@ -1044,6 +1281,159 @@ async def upload_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Failed to save uploaded file.")
         
     return {"url": f"/static/uploads/{filename}"}
+
+@app.get("/api/forms/{form_id}/export/csv")
+async def export_csv(form_id: str, secret: str):
+    """Secure public CSV export route for Google Sheets integration via IMPORTDATA."""
+    if db.db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+        
+    form_doc = await db.db["forms"].find_one({"_id": form_id})
+    if not form_doc:
+        raise HTTPException(status_code=404, detail="Form not found")
+        
+    # Verify the secret token
+    db_token = form_doc.get("responseShareToken")
+    if not db_token or secret != db_token:
+        raise HTTPException(status_code=403, detail="Forbidden: Invalid or expired integration secret")
+        
+    form = FormModel(**{**form_doc, "id": form_doc["_id"]})
+    
+    # Load all responses
+    responses = []
+    cursor = db.db["responses"].find({"formId": form_id}).sort("submittedAt", 1) # chronological order for sheets
+    async for doc in cursor:
+        responses.append(doc)
+        
+    # Generate CSV in memory
+    output = io.StringIO()
+    # Add UTF-8 BOM for Excel/Google Sheets compatibility
+    output.write('\ufeff')
+    writer = csv.writer(output, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    
+    # Headers
+    headers = ["Submitted At"]
+    for q in form.questions:
+        headers.append(q.label)
+    writer.writerow(headers)
+    
+    # Rows
+    for resp in responses:
+        submitted_at = resp.get("submittedAt")
+        submitted_at_str = ""
+        if isinstance(submitted_at, datetime):
+            submitted_at_str = submitted_at.strftime("%Y-%m-%d %H:%M:%S")
+        elif isinstance(submitted_at, str):
+            submitted_at_str = submitted_at
+            
+        answers = resp.get("answers", {})
+        row = [submitted_at_str]
+        for q in form.questions:
+            ans = answers.get(q.id)
+            if ans is None:
+                row.append("")
+            elif isinstance(ans, list):
+                row.append("; ".join(map(str, ans)))
+            else:
+                val_str = str(ans)
+                # Prevent Excel/Sheets auto-formatting phone/long numbers into scientific notation or dropping leading zeroes
+                if re.match(r"^\+?\d{8,}$", val_str) or re.match(r"^0\d+$", val_str):
+                    row.append(f'="{val_str}"')
+                else:
+                    row.append(val_str)
+        writer.writerow(row)
+        
+    csv_data = output.getvalue()
+    output.close()
+    
+    filename = f"{form.title.lower().replace(' ', '_')}_responses.csv"
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
+
+@app.post("/api/forms/{form_id}/link-sheets")
+async def link_sheets(form_id: str, request: Request):
+    """Enable Google Sheets integration and generate a unique CSV sync token."""
+    if db.db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+        
+    user_id = await get_current_user_id(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    existing_form = await db.db["forms"].find_one({"_id": form_id})
+    if not existing_form:
+        raise HTTPException(status_code=404, detail="Form not found")
+        
+    if existing_form.get("userId") != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+        
+    # Generate unique token
+    import uuid
+    token = uuid.uuid4().hex
+    
+    await db.db["forms"].update_one(
+        {"_id": form_id},
+        {"$set": {
+            "responseShareToken": token,
+            "isLinkedToSheets": True
+        }}
+    )
+    
+    return {"responseShareToken": token}
+
+@app.post("/api/forms/{form_id}/unlink-sheets")
+async def unlink_sheets(form_id: str, request: Request):
+    """Disable Google Sheets integration and revoke the CSV sync token."""
+    if db.db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+        
+    user_id = await get_current_user_id(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    existing_form = await db.db["forms"].find_one({"_id": form_id})
+    if not existing_form:
+        raise HTTPException(status_code=404, detail="Form not found")
+        
+    if existing_form.get("userId") != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+        
+    await db.db["forms"].update_one(
+        {"_id": form_id},
+        {"$set": {
+            "responseShareToken": None,
+            "isLinkedToSheets": False
+        }}
+    )
+    
+    return {"message": "Sheets integration unlinked successfully."}
+
+@app.delete("/api/forms/{form_id}/responses")
+async def delete_responses(form_id: str, request: Request):
+    """Permanently delete all responses for the form."""
+    if db.db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+        
+    user_id = await get_current_user_id(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    existing_form = await db.db["forms"].find_one({"_id": form_id})
+    if not existing_form:
+        raise HTTPException(status_code=404, detail="Form not found")
+        
+    if existing_form.get("userId") != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+        
+    # Delete all responses matching the formId
+    delete_res = await db.db["responses"].delete_many({"formId": form_id})
+    
+    return {"message": f"Successfully deleted {delete_res.deleted_count} response(s)."}
 
 @app.get("/health")
 @app.get("/api/health")
