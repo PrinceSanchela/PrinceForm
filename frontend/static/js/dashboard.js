@@ -26,7 +26,6 @@ document.addEventListener("DOMContentLoaded", () => {
 function initApp() {
     checkFirstTimeVisit();
     setupTabNavigation();
-    loadForms();
     setupBrandingListeners();
     setupColorPresets();
     
@@ -285,7 +284,7 @@ function setupTabNavigation() {
     const tabs = document.querySelectorAll(".tab-btn");
     tabs.forEach(tab => {
         tab.addEventListener("click", (e) => {
-            const targetTab = e.target.dataset.tab;
+            const targetTab = e.currentTarget.dataset.tab;
             
             // Prevent entering builder or responses directly without a form
             if ((targetTab === "builder" || targetTab === "responses") && !activeForm) {
@@ -296,9 +295,43 @@ function setupTabNavigation() {
             switchTab(targetTab);
         });
     });
+
+    // Handle browser back/forward buttons (hashchange event)
+    window.addEventListener("hashchange", () => {
+        const targetTab = window.location.hash.slice(1) || "forms";
+        if (["forms", "builder", "responses"].includes(targetTab)) {
+            if ((targetTab === "builder" || targetTab === "responses") && !activeForm) {
+                window.location.hash = "#forms";
+                return;
+            }
+            switchTab(targetTab);
+        }
+    });
+
+    // Load initial tab based on URL hash
+    const initialTab = window.location.hash.slice(1) || "forms";
+    if (["forms", "builder", "responses"].includes(initialTab)) {
+        if ((initialTab === "builder" || initialTab === "responses") && !activeForm) {
+            window.location.hash = "#forms";
+            switchTab("forms");
+        } else {
+            switchTab(initialTab);
+        }
+    } else {
+        switchTab("forms");
+    }
 }
 
 function switchTab(tabName) {
+    const activeBtn = document.querySelector(".tab-btn.active");
+    const currentActiveTab = activeBtn ? activeBtn.dataset.tab : "";
+    if (currentActiveTab === tabName) return;
+
+    // Synchronize browser history hash
+    if (window.location.hash !== `#${tabName}`) {
+        window.location.hash = tabName;
+    }
+
     // Update navigation styles
     document.querySelectorAll(".tab-btn").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.tab === tabName);
@@ -2363,20 +2396,106 @@ function renderAnalyticsCharts() {
             const listDiv = document.createElement("div");
             listDiv.className = "text-list-responses";
             
-            let responsesCount = 0;
-            activeFormResponses.forEach(resp => {
+            // Choose SVGs based on question type
+            let typeIcon = '';
+            if (q.type === 'email') {
+                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${activeForm.branding.themeColor}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M4 4h16c1.1 0 2-.9 2-2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
+            } else if (q.type === 'tel') {
+                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${activeForm.branding.themeColor}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+            } else if (q.type === 'date') {
+                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${activeForm.branding.themeColor}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+            } else {
+                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${activeForm.branding.themeColor}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+            }
+
+            const quoteSvg = `<svg viewBox="0 0 24 24" fill="currentColor" style="width:16px; height:16px; color:rgba(99,102,241,0.25); margin-right:8px; display:inline-block; vertical-align:top; flex-shrink:0;"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.154c-2.41 1.005-4 3.698-4 5.846h4v10h-10z"/></svg>`;
+
+            // Gather all responses
+            const answers = [];
+            activeFormResponses.forEach((resp, idx) => {
                 const ans = resp.answers[q.id];
-                if (ans) {
-                    responsesCount++;
-                    const item = document.createElement("div");
-                    item.className = "text-response-item";
-                    item.innerText = ans;
-                    listDiv.appendChild(item);
+                if (ans !== undefined && ans !== null && ans !== "") {
+                    answers.push({ val: ans, respIdx: idx + 1 });
                 }
             });
-            
-            if (responsesCount === 0) {
+
+            if (answers.length === 0) {
                 listDiv.innerHTML = `<span style="color:var(--text-color-muted); font-style:italic; font-size:0.85rem;">No answers filled in.</span>`;
+            } else if (q.type === "textarea") {
+                // Render as testimonial cards/quote bubbles
+                answers.forEach(item => {
+                    const bubble = document.createElement("div");
+                    bubble.className = "text-response-item paragraph-response-item";
+                    bubble.style.borderLeft = `3px solid ${activeForm.branding.themeColor}`;
+                    bubble.style.background = `rgba(99, 102, 241, 0.02)`;
+                    bubble.style.display = "flex";
+                    bubble.style.flexDirection = "column";
+                    bubble.style.gap = "4px";
+                    
+                    bubble.innerHTML = `
+                        <div style="display:flex; align-items:flex-start;">
+                            ${quoteSvg}
+                            <div style="flex:1; font-style:italic; color:var(--text-color-primary); line-height:1.4; word-break:break-word;">
+                                "${escapeHTML(item.val)}"
+                            </div>
+                        </div>
+                        <div style="text-align:right; font-size:0.7rem; color:var(--text-color-muted); margin-top:2px;">
+                            — Submission #${item.respIdx}
+                        </div>
+                    `;
+                    listDiv.appendChild(bubble);
+                });
+            } else {
+                // Short answers: Check for duplicates to group them
+                const counts = {};
+                answers.forEach(item => {
+                    counts[item.val] = (counts[item.val] || 0) + 1;
+                });
+
+                const uniqueVals = Object.keys(counts);
+                const hasDuplicates = uniqueVals.some(v => counts[v] > 1);
+
+                if (hasDuplicates) {
+                    // Grouped view
+                    const sortedVals = uniqueVals.sort((a, b) => counts[b] - counts[a]);
+                    sortedVals.forEach(val => {
+                        const item = document.createElement("div");
+                        item.className = "text-response-item";
+                        item.style.display = "flex";
+                        item.style.justifyContent = "space-between";
+                        item.style.alignItems = "center";
+                        item.style.borderLeft = `3px solid ${activeForm.branding.themeColor}`;
+                        
+                        item.innerHTML = `
+                            <div style="display:flex; align-items:center; gap:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                ${typeIcon}
+                                <span style="font-weight:500; color:var(--text-color-primary);">${escapeHTML(val)}</span>
+                            </div>
+                            <span style="font-size:0.7rem; font-weight:600; background:rgba(99,102,241,0.1); color:${activeForm.branding.themeColor}; padding:2px 8px; border-radius:12px; white-space:nowrap;">
+                                ${counts[val]} ${counts[val] > 1 ? 'replies' : 'reply'}
+                            </span>
+                        `;
+                        listDiv.appendChild(item);
+                    });
+                } else {
+                    // Unique values: Show list with submission index
+                    answers.forEach(item => {
+                        const div = document.createElement("div");
+                        div.className = "text-response-item";
+                        div.style.display = "flex";
+                        div.style.alignItems = "center";
+                        div.style.borderLeft = `3px solid ${activeForm.branding.themeColor}`;
+                        
+                        div.innerHTML = `
+                            <span style="font-size:0.75rem; font-weight:700; color:var(--text-color-muted); min-width:32px;">#${item.respIdx}</span>
+                            <div style="display:flex; align-items:center; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                ${typeIcon}
+                                <span style="font-weight:500; color:var(--text-color-primary);">${escapeHTML(item.val)}</span>
+                            </div>
+                        `;
+                        listDiv.appendChild(div);
+                    });
+                }
             }
             
             chartCard.appendChild(listDiv);
