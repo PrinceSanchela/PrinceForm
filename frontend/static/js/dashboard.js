@@ -2578,8 +2578,9 @@ function generateRandomId(len) {
 }
 
 function escapeHTML(str) {
-    if (!str) return "";
-    return str.replace(/[&<>'"]/g, 
+    if (str === undefined || str === null || str === "") return "";
+    const s = String(str);
+    return s.replace(/[&<>'"]/g, 
         tag => ({
             '&': '&amp;',
             '<': '&lt;',
