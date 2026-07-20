@@ -313,19 +313,19 @@ function setupTabNavigation() {
     if (["forms", "builder", "responses"].includes(initialTab)) {
         if ((initialTab === "builder" || initialTab === "responses") && !activeForm) {
             window.location.hash = "#forms";
-            switchTab("forms");
+            switchTab("forms", true);
         } else {
-            switchTab(initialTab);
+            switchTab(initialTab, true);
         }
     } else {
-        switchTab("forms");
+        switchTab("forms", true);
     }
 }
 
-function switchTab(tabName) {
+function switchTab(tabName, force = false) {
     const activeBtn = document.querySelector(".tab-btn.active");
     const currentActiveTab = activeBtn ? activeBtn.dataset.tab : "";
-    if (currentActiveTab === tabName) return;
+    if (currentActiveTab === tabName && !force) return;
 
     // Synchronize browser history hash
     if (window.location.hash !== `#${tabName}`) {
