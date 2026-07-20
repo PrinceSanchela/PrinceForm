@@ -2325,23 +2325,123 @@ function renderResponsesTable() {
         tbody.appendChild(tr);
     });
 }
+function getAvatarColor(idx) {
+    const hues = [220, 262, 325, 185, 142, 32]; // blue, purple, magenta, cyan, green, orange
+    const hue = hues[idx % hues.length];
+    return `hsl(${hue}, 85%, 96%)`;
+}
+function getAvatarTextColor(idx) {
+    const hues = [220, 262, 325, 185, 142, 32];
+    const hue = hues[idx % hues.length];
+    return `hsl(${hue}, 85%, 45%)`;
+}
 
 function renderAnalyticsCharts() {
     const chartsContainer = document.getElementById("analytics-charts-container");
     chartsContainer.innerHTML = "";
     
+    // Update overview stats cards if they exist
+    const sheetsStatusEl = document.getElementById("sheets-sync-status");
+    const sheetsIconBgEl = document.getElementById("sheets-sync-status-icon-bg");
+    if (sheetsStatusEl && sheetsIconBgEl) {
+        if (activeForm && activeForm.isLinkedToSheets) {
+            sheetsStatusEl.innerText = "Linked";
+            sheetsStatusEl.style.color = "#10b981";
+            sheetsIconBgEl.style.background = "rgba(16, 185, 129, 0.1)";
+            sheetsIconBgEl.style.color = "#10b981";
+        } else {
+            sheetsStatusEl.innerText = "Not Linked";
+            sheetsStatusEl.style.color = "#ef4444";
+            sheetsIconBgEl.style.background = "rgba(239, 68, 68, 0.1)";
+            sheetsIconBgEl.style.color = "#ef4444";
+        }
+    }
+
+    const formStatusEl = document.getElementById("form-active-status");
+    const formIconBgEl = document.getElementById("form-active-status-icon-bg");
+    if (formStatusEl && formIconBgEl) {
+        if (activeForm && activeForm.acceptingResponses !== false) {
+            formStatusEl.innerText = "Active";
+            formStatusEl.style.color = "#10b981";
+            formIconBgEl.style.background = "rgba(16, 185, 129, 0.1)";
+            formIconBgEl.style.color = "#10b981";
+        } else {
+            formStatusEl.innerText = "Suspended";
+            formStatusEl.style.color = "#f59e0b";
+            formIconBgEl.style.background = "rgba(245, 158, 11, 0.1)";
+            formIconBgEl.style.color = "#f59e0b";
+        }
+    }
+    
     if (activeFormResponses.length === 0) {
-        chartsContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-color-muted); grid-column: 1/-1;">No data available to chart.</div>`;
+        chartsContainer.innerHTML = `<div style="text-align:center; padding:32px; color:var(--text-color-muted); grid-column: 1/-1; background:rgba(255,255,255,0.4); border-radius:12px; border:1px dashed var(--border-color);">No data available to chart.</div>`;
         return;
     }
     
     activeForm.questions.forEach(q => {
         const chartCard = document.createElement("div");
         chartCard.className = "chart-card animate-fade-in";
+        if (activeForm.branding && activeForm.branding.themeColor) {
+            chartCard.style.setProperty("--primary-color", activeForm.branding.themeColor);
+        }
         
         const title = document.createElement("div");
         title.className = "chart-title";
-        title.innerText = q.label;
+        
+        // Smart type detection
+        const labelText = (q.label || "").toLowerCase();
+        const qType = (q.type || "").toLowerCase();
+        const valType = (q.validationType || "").toLowerCase();
+        
+        let detected = "text";
+        if (["radio", "checkbox", "select"].includes(qType)) {
+            detected = "choices";
+        } else if (qType === "textarea" || qType === "paragraph") {
+            detected = "paragraph";
+        } else if (qType === "email" || valType === "email" || labelText.includes("email")) {
+            detected = "email";
+        } else if (qType === "phone" || qType === "tel" || valType === "phone" || valType === "tel" || labelText.includes("phone") || labelText.includes("mobile") || labelText.includes("whatsapp") || labelText.includes("contact")) {
+            detected = "phone";
+        } else if (qType === "date" || valType === "date" || labelText.includes("date") || labelText.includes("dob") || labelText.includes("birth")) {
+            detected = "date";
+        } else if (qType === "number" || valType === "number" || labelText.includes("number") || labelText.includes("roll") || labelText.includes("amount") || labelText.includes("marks")) {
+            detected = "number";
+        }
+        
+        let typeBadgeText = "Text Field";
+        let typeBadgeColor = "rgba(6, 182, 212, 0.08)";
+        let typeBadgeTextColor = "#0891b2";
+        
+        if (detected === "choices") {
+            typeBadgeText = "Choices";
+            typeBadgeColor = "rgba(99, 102, 241, 0.08)";
+            typeBadgeTextColor = activeForm.branding.themeColor || "var(--primary-color)";
+        } else if (detected === "paragraph") {
+            typeBadgeText = "Paragraph";
+            typeBadgeColor = "rgba(217, 70, 239, 0.08)";
+            typeBadgeTextColor = "#d946ef";
+        } else if (detected === "phone") {
+            typeBadgeText = "Phone Number";
+            typeBadgeColor = "rgba(16, 185, 129, 0.08)";
+            typeBadgeTextColor = "#10b981";
+        } else if (detected === "email") {
+            typeBadgeText = "Email Address";
+            typeBadgeColor = "rgba(245, 158, 11, 0.08)";
+            typeBadgeTextColor = "#f59e0b";
+        } else if (detected === "date") {
+            typeBadgeText = "Date Field";
+            typeBadgeColor = "rgba(139, 92, 246, 0.08)";
+            typeBadgeTextColor = "#8b5cf6";
+        } else if (detected === "number") {
+            typeBadgeText = "Number Field";
+            typeBadgeColor = "rgba(236, 72, 153, 0.08)";
+            typeBadgeTextColor = "#ec4899";
+        }
+        
+        title.innerHTML = `
+            <span style="font-weight: 700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHTML(q.label)}">${escapeHTML(q.label)}</span>
+            <span style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; background:${typeBadgeColor}; color:${typeBadgeTextColor}; padding:3px 8px; border-radius:6px; font-family:sans-serif; flex-shrink:0;">${typeBadgeText}</span>
+        `;
         chartCard.appendChild(title);
         
         // Process data
@@ -2374,14 +2474,14 @@ function renderAnalyticsCharts() {
             
             Object.keys(counts).forEach(opt => {
                 const val = counts[opt];
-                const pct = totalAnswers > 0 ? Math.round((val / activeFormResponses.length) * 100) : 0;
+                const pct = totalAnswers > 0 ? Math.round((val / totalAnswers) * 100) : 0;
                 
                 const barRow = document.createElement("div");
                 barRow.className = "bar-row";
                 barRow.innerHTML = `
                     <div class="bar-label-row">
-                        <span>${escapeHTML(opt)}</span>
-                        <span>${val} (${pct}%)</span>
+                        <span style="font-weight:500; color:var(--text-color-primary);">${escapeHTML(opt)}</span>
+                        <span>${val} <span style="color:var(--text-color-muted); font-weight:500; font-size:0.8rem; margin-left:2px;">(${pct}%)</span></span>
                     </div>
                     <div class="bar-track">
                         <div class="bar-fill" style="width: ${pct}%; --primary-color: ${activeForm.branding.themeColor};"></div>
@@ -2398,14 +2498,17 @@ function renderAnalyticsCharts() {
             
             // Choose SVGs based on question type
             let typeIcon = '';
-            if (q.type === 'email') {
-                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${activeForm.branding.themeColor}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M4 4h16c1.1 0 2-.9 2-2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
-            } else if (q.type === 'tel') {
-                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${activeForm.branding.themeColor}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
-            } else if (q.type === 'date') {
-                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${activeForm.branding.themeColor}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+            const themeCol = activeForm.branding.themeColor || 'var(--primary-color)';
+            if (detected === 'email') {
+                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${themeCol}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M4 4h16c1.1 0 2-.9 2-2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
+            } else if (detected === 'phone') {
+                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${themeCol}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+            } else if (detected === 'date') {
+                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${themeCol}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+            } else if (detected === 'number') {
+                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${themeCol}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>`;
             } else {
-                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${activeForm.branding.themeColor}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+                typeIcon = `<svg class="chart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; color:${themeCol}; margin-right:6px; display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
             }
 
             const quoteSvg = `<svg viewBox="0 0 24 24" fill="currentColor" style="width:16px; height:16px; color:rgba(99,102,241,0.25); margin-right:8px; display:inline-block; vertical-align:top; flex-shrink:0;"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.154c-2.41 1.005-4 3.698-4 5.846h4v10h-10z"/></svg>`;
@@ -2426,21 +2529,28 @@ function renderAnalyticsCharts() {
                 answers.forEach(item => {
                     const bubble = document.createElement("div");
                     bubble.className = "text-response-item paragraph-response-item";
-                    bubble.style.borderLeft = `3px solid ${activeForm.branding.themeColor}`;
-                    bubble.style.background = `rgba(99, 102, 241, 0.02)`;
+                    bubble.style.borderLeft = `4px solid ${activeForm.branding.themeColor || 'var(--primary-color)'}`;
+                    bubble.style.background = `rgba(99, 102, 241, 0.015)`;
                     bubble.style.display = "flex";
                     bubble.style.flexDirection = "column";
-                    bubble.style.gap = "4px";
+                    bubble.style.gap = "8px";
+                    
+                    const avatarColor = getAvatarColor(item.respIdx);
+                    const avatarTextColor = getAvatarTextColor(item.respIdx);
                     
                     bubble.innerHTML = `
-                        <div style="display:flex; align-items:flex-start;">
-                            ${quoteSvg}
-                            <div style="flex:1; font-style:italic; color:var(--text-color-primary); line-height:1.4; word-break:break-word;">
-                                "${escapeHTML(item.val)}"
+                        <div style="display:flex; align-items:flex-start; gap:10px;">
+                            <div style="width:26px; height:26px; border-radius:50%; background:${avatarColor}; color:${avatarTextColor}; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; flex-shrink:0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family:'Outfit', sans-serif;">
+                                #${item.respIdx}
                             </div>
-                        </div>
-                        <div style="text-align:right; font-size:0.7rem; color:var(--text-color-muted); margin-top:2px;">
-                            — Submission #${item.respIdx}
+                            <div style="flex:1;">
+                                <div style="display:flex; align-items:flex-start; gap:4px;">
+                                    ${quoteSvg}
+                                    <div style="flex:1; font-style:italic; color:var(--text-color-primary); line-height:1.45; word-break:break-word; font-size:0.85rem;">
+                                        "${escapeHTML(item.val)}"
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     `;
                     listDiv.appendChild(bubble);
@@ -2458,20 +2568,20 @@ function renderAnalyticsCharts() {
                 if (hasDuplicates) {
                     // Grouped view
                     const sortedVals = uniqueVals.sort((a, b) => counts[b] - counts[a]);
-                    sortedVals.forEach(val => {
+                    sortedVals.forEach((val, idx) => {
                         const item = document.createElement("div");
                         item.className = "text-response-item";
                         item.style.display = "flex";
                         item.style.justifyContent = "space-between";
                         item.style.alignItems = "center";
-                        item.style.borderLeft = `3px solid ${activeForm.branding.themeColor}`;
+                        item.style.borderLeft = `3px solid ${activeForm.branding.themeColor || 'var(--primary-color)'}`;
                         
                         item.innerHTML = `
                             <div style="display:flex; align-items:center; gap:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                                 ${typeIcon}
-                                <span style="font-weight:500; color:var(--text-color-primary);">${escapeHTML(val)}</span>
+                                <span style="font-weight:500; color:var(--text-color-primary); font-size:0.85rem;">${escapeHTML(val)}</span>
                             </div>
-                            <span style="font-size:0.7rem; font-weight:600; background:rgba(99,102,241,0.1); color:${activeForm.branding.themeColor}; padding:2px 8px; border-radius:12px; white-space:nowrap;">
+                            <span style="font-size:0.7rem; font-weight:600; background:rgba(99,102,241,0.1); color:${activeForm.branding.themeColor || 'var(--theme-color)'}; padding:2px 8px; border-radius:12px; white-space:nowrap;">
                                 ${counts[val]} ${counts[val] > 1 ? 'replies' : 'reply'}
                             </span>
                         `;
@@ -2484,13 +2594,19 @@ function renderAnalyticsCharts() {
                         div.className = "text-response-item";
                         div.style.display = "flex";
                         div.style.alignItems = "center";
-                        div.style.borderLeft = `3px solid ${activeForm.branding.themeColor}`;
+                        div.style.gap = "10px";
+                        div.style.borderLeft = `3px solid ${activeForm.branding.themeColor || 'var(--primary-color)'}`;
+                        
+                        const avatarColor = getAvatarColor(item.respIdx);
+                        const avatarTextColor = getAvatarTextColor(item.respIdx);
                         
                         div.innerHTML = `
-                            <span style="font-size:0.75rem; font-weight:700; color:var(--text-color-muted); min-width:32px;">#${item.respIdx}</span>
+                            <div style="width:24px; height:24px; border-radius:50%; background:${avatarColor}; color:${avatarTextColor}; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700; flex-shrink:0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); font-family:'Outfit', sans-serif;">
+                                ${item.respIdx}
+                            </div>
                             <div style="display:flex; align-items:center; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                                 ${typeIcon}
-                                <span style="font-weight:500; color:var(--text-color-primary);">${escapeHTML(item.val)}</span>
+                                <span style="font-weight:500; color:var(--text-color-primary); font-size:0.85rem;">${escapeHTML(item.val)}</span>
                             </div>
                         `;
                         listDiv.appendChild(div);
