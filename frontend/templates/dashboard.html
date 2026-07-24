@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prince Form | Workspace Dashboard</title>
+    <!-- Preconnect to speed up external resource loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Base Stylesheet references -->
     <link rel="stylesheet" href="/static/css/common.css">
-    <link class="cache-buster-css" rel="stylesheet" href="/static/css/dashboard.css?v=3.0">
+    <link rel="stylesheet" href="/static/css/dashboard.css?v=3.1">
     <link rel="stylesheet" href="/static/css/form.css">
     <link rel="shortcut icon" type="image/x-icon" href="/static/logo.png">
     
@@ -483,7 +486,21 @@
                                     </div>
                                     <span class="item-name">File Upload</span>
                                 </div>
+
+                                <!-- Rating -->
+                                <div class="toolbox-item" draggable="true" data-type="rating">
+                                    <div class="toolbox-item-preview">
+                                        <div class="preview-mock-rating-group">
+                                            <div class="preview-mock-label">Rating Question</div>
+                                            <div style="display:flex; gap:3px; margin-top:4px; font-size:10px; color:#f59e0b;">
+                                                <span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span class="item-name">Rating</span>
+                                </div>
                             </div>
+
                         </div>
                     </div>
                 </aside>
@@ -494,7 +511,10 @@
                     <div class="builder-section-title">
                         <span class="gradient-text">Form Editor</span>
                         <div style="display:flex; gap:8px;">
-                            <button id="btn-share-builder" class="btn btn-secondary" style="font-size:0.85rem; padding:6px 12px; display:none;">Share</button>
+                            <button id="btn-share-builder" class="btn btn-secondary" style="font-size:0.85rem; padding:6px 14px; display:inline-flex; align-items:center; gap:6px;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                                <span>Share</span>
+                            </button>
                             <button id="btn-preview-form" class="btn btn-secondary" style="font-size:0.85rem; padding:6px 16px;">Live Preview</button>
                             <button id="btn-save-form" class="btn btn-primary" style="font-size:0.85rem; padding:6px 16px;">Save Form Configuration</button>
                         </div>
@@ -559,6 +579,71 @@
 
                     <!-- Settings Tab Area -->
                     <div class="editor-tab-content" id="editor-tab-settings-area" data-editor-tab-content="settings" style="display: none;">
+                        <!-- Responses Collection & Protection Settings Card -->
+                        <div class="branding-options" style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 12px;" onclick="const sec = document.getElementById('responses-settings-section'); sec.style.display = sec.style.display === 'none' ? 'flex' : 'none';">
+                                <div>
+                                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; margin: 0; color: var(--text-color);">Responses</h3>
+                                    <div style="font-size: 0.8rem; color: var(--text-color-secondary); margin-top: 2px;">Manage how responses are collected and protected</div>
+                                </div>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+                            </div>
+                            
+                            <div id="responses-settings-section" style="display: flex; flex-direction: column; gap: 18px; padding-top: 8px;">
+                                <!-- Collect email addresses -->
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                                    <div>
+                                        <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-color);">Collect email addresses</div>
+                                        <div style="font-size: 0.78rem; color: var(--text-color-secondary); margin-top: 2px;">Automatically collect or prompt for email address</div>
+                                    </div>
+                                    <select id="setting-collect-emails" class="q-type-select" style="width: auto; min-width: 170px; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px;">
+                                        <option value="do_not_collect">Do not collect</option>
+                                        <option value="verified">Verified</option>
+                                        <option value="responder_input">Responder input</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Send responders a copy of their response -->
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                                    <div>
+                                        <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-color);">Send responders a copy of their response</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-color-muted); margin-top: 2px;">Requires <strong>Collect email addresses</strong></div>
+                                    </div>
+                                    <select id="setting-send-response-copy" class="q-type-select" style="width: auto; min-width: 170px; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px;">
+                                        <option value="off">Off</option>
+                                        <option value="when_requested">When requested</option>
+                                        <option value="always">Always</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Allow response editing -->
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                                    <div>
+                                        <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-color);">Allow response editing</div>
+                                        <div style="font-size: 0.78rem; color: var(--text-color-secondary); margin-top: 2px;">Responses can be changed after being submitted</div>
+                                    </div>
+                                    <label class="q-toggle-switch">
+                                        <input type="checkbox" id="setting-allow-editing">
+                                        <span class="q-toggle-slider"></span>
+                                    </label>
+                                </div>
+                                
+                                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-color-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 6px;">REQUIRES SIGN-IN</div>
+                                
+                                <!-- Limit to 1 response -->
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                                    <div>
+                                        <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-color);">Limit to 1 response</div>
+                                        <div style="font-size: 0.78rem; color: var(--text-color-secondary); margin-top: 2px;">Responders will be required to submit only once</div>
+                                    </div>
+                                    <label class="q-toggle-switch">
+                                        <input type="checkbox" id="setting-limit-one">
+                                        <span class="q-toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Advanced Settings -->
                         <div class="branding-options">
                             <div class="builder-section-title" style="font-size:1.05rem; border:none; padding:0; margin-bottom:16px;">Advanced Form Settings</div>
@@ -828,6 +913,13 @@
                                     <span>Download responses (.csv)</span>
                                 </button>
                                 
+                                <button class="dropdown-item" id="menu-download-files-zip">
+                                    <svg style="width:16px; height:16px; color:var(--text-color-muted);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+                                    </svg>
+                                    <span>Download all attachments (.zip)</span>
+                                </button>
+                                
                                 <button class="dropdown-item" id="menu-print-responses">
                                     <svg style="width:16px; height:16px; color:var(--text-color-muted);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.567-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-14.326 0C3.768 7.28 3 8.215 3 9.296v6.454a2.25 2.25 0 0 0 2.25 2.25h1.091M9 10.125h6M9 12.75h3"/>
@@ -972,7 +1064,48 @@
         </div>
     </div>
     
-    <!-- Script code source -->
-    <script src="/static/js/dashboard.js?v=4.9"></script>
+    <!-- Secure File Manager & Viewer Modal (Admin Side) -->
+    <div id="secure-file-modal" class="modal-overlay" style="display:none; align-items:center; justify-content:center; z-index:10000; background:rgba(15, 23, 42, 0.7); backdrop-filter:blur(8px);">
+        <div class="form-card-base modal-card-active" style="width: 92%; max-width: 680px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border-radius: 18px; box-shadow: var(--shadow-lg);">
+            <!-- Modal Header -->
+            <div style="padding: 20px 24px; border-bottom: 1px solid var(--border-color); background: var(--bg-color-secondary); display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(26, 115, 232, 0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg width="22" height="22" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                          <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                          <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                          <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 10.15z" fill="#ea4335"/>
+                          <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.45-1.2h-18.6c-1.55 0-3.1.4-4.45 1.2z" fill="#00832d"/>
+                          <path d="m57.4 1.2-13.75 23.8 13.75 23.8h27.5c0-1.55-.4-3.1-1.2-4.5l-21.85-37.85c-.8-1.4-1.95-2.5-3.3-3.3z" fill="#ffba00"/>
+                          <path d="m27.5 53-13.75 23.8c1.35.8 2.9 1.2 4.45 1.2h50.9c1.55 0 3.1-.4 4.45-1.2l-13.75-23.8z" fill="#2684fc"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 id="modal-file-title" style="font-family:'Outfit'; font-size:1.1rem; font-weight:700; margin:0; color:var(--text-color);">Secure File Attachments</h3>
+                        <span style="font-size:0.75rem; color:#10b981; font-weight:600; display:flex; align-items:center; gap:4px; margin-top:2px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                            Verified Malware-Free • Google Drive Cloud Vault
+                        </span>
+                    </div>
+                </div>
+                <button id="close-file-modal-btn" type="button" style="background:none; border:none; font-size:1.6rem; cursor:pointer; color:var(--text-color-secondary); padding:4px;" title="Close Modal">&times;</button>
+            </div>
+            
+            <!-- Modal Body / Content -->
+            <div id="modal-file-body" style="padding: 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px; max-height: 65vh;">
+                <!-- Dynamically populated file cards -->
+            </div>
+            
+            <!-- Modal Footer -->
+            <div style="padding: 16px 24px; border-top: 1px solid var(--border-color); background: var(--bg-color-secondary); display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size:0.75rem; color:var(--text-color-muted);">🔒 End-to-end encrypted cloud storage</span>
+                <button id="close-file-modal-bottom-btn" type="button" class="btn btn-secondary" style="font-size:0.85rem; padding: 6px 16px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- Dashboard script — deferred so it never blocks page render -->
+    <script src="/static/js/dashboard.js?v=4.9" defer></script>
 </body>
 </html>

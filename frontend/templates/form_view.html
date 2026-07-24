@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ form.title }} | Prince Form</title>
+    <!-- Preconnect to speed up external resource loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://accounts.google.com">
+    <link rel="dns-prefetch" href="https://accounts.google.com">
     <!-- Base Stylesheet references -->
     <link rel="stylesheet" href="/static/css/common.css">
     <link rel="stylesheet" href="/static/css/form.css">
@@ -11,7 +16,7 @@
     
     <!-- Dynamic Google Font Import based on Branding configurations -->
     {% if form.branding.fontFamily in ['Inter', 'Outfit', 'Roboto'] %}
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ form.branding.fontFamily }}:wght@300;400;500;600;700&amp;display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ form.branding.fontFamily }}:wght@400;500;600;700&display=swap">
     {% endif %}
     
     <!-- Inline variables overrides -->
@@ -24,6 +29,8 @@
             --font-family: '{{ form.branding.fontFamily }}', sans-serif;
         }
     </style>
+    <!-- Google Identity Services (GSI) — loaded async, non-blocking -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="branded-body">
 
@@ -34,7 +41,7 @@
         <img src="{{ form.branding.bannerUrl }}" class="form-banner-img" alt="Form Banner Header">
         {% endif %}
         
-        {% if form.acceptingResponses != False %}
+        {% if form.acceptingResponses != False and form.isPublished != False %}
         <!-- Form Content -->
         <form id="responder-form-element">
             <!-- Hidden context parameters -->
@@ -47,6 +54,10 @@
             <input type="hidden" id="form-success-share-hidden" value="{{ 'true' if form.showSocialShare else 'false' }}">
             <input type="hidden" id="form-success-buttons-json" value="{{ (form.successButtons or []) | tojson | escape }}">
             <input type="hidden" id="form-success-steps-json" value="{{ (form.successSteps or []) | tojson | escape }}">
+            <input type="hidden" id="form-collect-email-hidden" value="{{ form.collectEmailAddresses or 'do_not_collect' }}">
+            <input type="hidden" id="form-send-copy-hidden" value="{{ form.sendResponseCopy or 'off' }}">
+            <input type="hidden" id="form-allow-editing-hidden" value="{{ 'true' if form.allowResponseEditing else 'false' }}">
+            <input type="hidden" id="form-limit-one-hidden" value="{{ 'true' if form.limitToOneResponse else 'false' }}">
             
             <div class="form-card-base card-style-{{ form.branding.cardStyle }} form-header-card animate-fade-in">
                 <!-- Custom logo image if exists -->
@@ -56,7 +67,33 @@
                 
                 <h1 class="form-title">{{ form.title }}</h1>
                 <div class="form-description">{{ form.description | safe }}</div>
+                
+                {% if form.collectEmailAddresses and form.collectEmailAddresses != "do_not_collect" %}
+                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-color); font-size: 0.82rem; color: var(--text-color-secondary); display: flex; align-items: center; gap: 6px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2-.9 2-2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <span><strong>Email collection:</strong> Valid email address required for response collection and notification copies.</span>
+                </div>
+                {% endif %}
             </div>
+
+            {% if form.collectEmailAddresses and form.collectEmailAddresses == "verified" %}
+            <div id="verified-account-container" class="form-card-base card-style-{{ form.branding.cardStyle }} animate-fade-in" style="margin-bottom: 20px; padding: 18px 22px;">
+                <div style="display: flex; align-items: center; justify-content: center; padding: 16px;">
+                    <span class="btn-spinner"></span> <span style="margin-left:10px; color:var(--text-color-secondary); font-size:0.9rem;">Checking verified account status...</span>
+                </div>
+            </div>
+            {% elif form.collectEmailAddresses and form.collectEmailAddresses == "responder_input" %}
+            <div class="form-card-base card-style-{{ form.branding.cardStyle }} question-card animate-fade-in" 
+                 data-q-id="collected_email_question" 
+                 data-q-type="email" 
+                 data-q-page="1"
+                 data-q-required="true">
+                <label class="question-title-label">
+                    Email Address <span class="required-star" style="color:var(--error-color);">*</span>
+                </label>
+                <input type="email" name="q_collected_email_question" id="collected-email-input" class="input-text" placeholder="name@example.com" required style="margin-top:8px;">
+            </div>
+            {% endif %}
             
             <!-- Loop Questions -->
             {% for q in form.questions %}
@@ -80,7 +117,13 @@
                  data-q-val-type="{{ q.validationType or 'none' }}"
                  data-q-val-pattern="{{ q.validationPattern or '' }}"
                  data-q-val-error="{{ q.validationErrorText or '' }}"
-                 data-q-validations="{{ (q.validations or []) | tojson | escape }}">
+                 data-q-validations="{{ (q.validations or []) | tojson | escape }}"
+                 data-q-allowed-only="{{ 'true' if q.allowedFileTypesOnly else 'false' }}"
+                 data-q-allowed-types="{{ (q.allowedFileTypes or []) | join(',') }}"
+                 data-q-max-files="{{ q.maxFiles or 1 }}"
+                 data-q-max-size="{{ q.maxFileSize or '10MB' }}"
+                 data-q-rating-scale="{{ q.ratingScale or 5 }}"
+                 data-q-rating-icon="{{ q.ratingIcon or 'star' }}">
                 
                 <div class="question-label">
                     {{ q.label }}
@@ -132,10 +175,51 @@
                     </div>
                     
                     {% elif q.type == "file" %}
-                    <div style="border: 2px dashed var(--border-color); padding: 20px; border-radius: var(--border-radius-sm); text-align: center; background: rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;" class="file-upload-zone" onmouseover="this.style.background='rgba(99,102,241,0.02)';" onmouseout="this.style.background='rgba(0,0,0,0.01)';">
-                        <span style="font-size: 1.5rem; display: block; margin-bottom: 6px;">📁</span>
-                        <span style="font-size: 0.85rem; color: var(--text-color-secondary); font-weight: 500;">Select file to upload (Max 10MB)</span>
-                        <input type="file" style="display: none;">
+                    <div class="file-upload-response-container">
+                        <div class="file-upload-zone" style="border: 2px dashed var(--border-color); padding: 22px 16px; border-radius: var(--border-radius-sm); text-align: center; background: rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(99,102,241,0.02)';" onmouseout="this.style.background='rgba(0,0,0,0.01)';">
+                            <div style="display:inline-flex; align-items:center; gap:6px; background: rgba(26, 115, 232, 0.08); padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; color: #1a73e8; font-weight: 600; margin-bottom: 8px;">
+                                <svg width="14" height="14" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                                  <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                                  <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 10.15z" fill="#ea4335"/>
+                                  <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.45-1.2h-18.6c-1.55 0-3.1.4-4.45 1.2z" fill="#00832d"/>
+                                  <path d="m57.4 1.2-13.75 23.8 13.75 23.8h27.5c0-1.55-.4-3.1-1.2-4.5l-21.85-37.85c-.8-1.4-1.95-2.5-3.3-3.3z" fill="#ffba00"/>
+                                  <path d="m27.5 53-13.75 23.8c1.35.8 2.9 1.2 4.45 1.2h50.9c1.55 0 3.1-.4 4.45-1.2l-13.75-23.8z" fill="#2684fc"/>
+                                </svg>
+                                Protected by Google Drive Cloud Storage
+                            </div>
+                            <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">📁</span>
+                            <span class="file-zone-title" style="font-size: 0.9rem; color: var(--text-color); font-weight: 600; display: block;">Click or drag file(s) here to upload</span>
+                            <span class="file-zone-subtitle" style="font-size: 0.78rem; color: var(--text-color-secondary); display: block; margin-top: 4px;">
+                                {% if q.allowedFileTypesOnly and q.allowedFileTypes %}
+                                    Allowed: {{ q.allowedFileTypes | join(', ') | title }} • Max {{ q.maxFiles or 1 }} file(s) • Up to {{ q.maxFileSize or '10MB' }}
+                                {% else %}
+                                    Max {{ q.maxFiles or 1 }} file(s) • Up to {{ q.maxFileSize or '10MB' }}
+                                {% endif %}
+                            </span>
+                            <input type="file" class="responder-file-input" {{ 'multiple' if (q.maxFiles or 1) > 1 else '' }} style="display: none;">
+                        </div>
+                        <div class="file-list-preview" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+
+                    {% elif q.type == "rating" %}
+                    <div class="rating-response-container">
+                        <input type="hidden" class="rating-value-input" name="q_{{ q.id }}" value="">
+                        <div class="rating-items-row" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: flex-start; padding: 8px 0;">
+                            {% set scale_num = q.ratingScale or 5 %}
+                            {% for num in range(1, scale_num + 1) %}
+                            <div class="rating-item" data-value="{{ num }}" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                                <span class="rating-number" style="font-size: 0.85rem; font-weight: 600; color: var(--text-color-secondary);">{{ num }}</span>
+                                <button type="button" class="rating-symbol-btn" aria-label="Rate {{ num }}" style="background: none; border: none; font-size: 1.6rem; cursor: pointer; padding: 4px; transition: transform 0.15s ease, opacity 0.15s ease; opacity: 0.45; filter: grayscale(100%);">
+                                    {% if (q.ratingIcon or 'star') == 'heart' %}❤️
+                                    {% elif (q.ratingIcon or 'star') == 'thumb' %}👍
+                                    {% elif (q.ratingIcon or 'star') == 'smile' %}😊
+                                    {% elif (q.ratingIcon or 'star') == 'circle' %}🔴
+                                    {% else %}⭐{% endif %}
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
                     {% endif %}
                     
@@ -143,6 +227,19 @@
             </div>
             {% endif %}
             {% endfor %}
+            
+            {% if form.sendResponseCopy and form.sendResponseCopy == "when_requested" %}
+            <div class="form-card-base card-style-{{ form.branding.cardStyle }} animate-fade-in" style="padding: 14px 20px; margin-bottom: 16px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.88rem; color: var(--text-color);">
+                    <input type="checkbox" id="send-copy-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
+                    <span>Send me a copy of my responses</span>
+                </label>
+            </div>
+            {% elif form.sendResponseCopy and form.sendResponseCopy == "always" %}
+            <div class="form-card-base card-style-{{ form.branding.cardStyle }} animate-fade-in" style="padding: 12px 18px; margin-bottom: 16px; background: rgba(26,115,232,0.05); border: 1px solid rgba(26,115,232,0.2); font-size: 0.82rem; color: #1a73e8; font-weight: 500;">
+                ℹ️ A copy of your responses will be emailed to your email address upon submission.
+            </div>
+            {% endif %}
             
             <!-- Submission Controls -->
             <div class="form-footer animate-fade-in">
@@ -173,17 +270,26 @@
         </div>
         {% endif %}
         
-        <!-- Branding Credit -->
-        <div class="branding-credit">
-            Made By <a href="https://prince-sanchela.vercel.app" target="_blank">Prince Sanchela</a> Custom Branded Forms
-        </div>
+        <!-- Official Google Forms Footer Matching Screenshot -->
+        <footer class="google-forms-official-footer" style="margin-top: 36px; margin-bottom: 28px; text-align: center; font-family: 'Roboto', 'Outfit', sans-serif; font-size: 0.78rem; color: var(--text-color-secondary, #5f6368); line-height: 1.8;">
+            <div>
+                This content is neither created nor endorsed by PrinceForm. - 
+                <a href="#" onclick="openContactOwnerModal(); return false;" style="color: var(--text-color-secondary, #5f6368); text-decoration: underline;">Contact form owner</a> - 
+                <a href="/terms" target="_blank" style="color: var(--text-color-secondary, #5f6368); text-decoration: underline;">Terms of Service</a> - 
+                <a href="/privacy" target="_blank" style="color: var(--text-color-secondary, #5f6368); text-decoration: underline;">Privacy Policy</a>
+            </div>
+            <div style="margin-top: 4px;">
+                Does this form look suspicious? 
+                <a href="#" onclick="openReportFormModal(); return false;" style="color: var(--text-color-secondary, #5f6368); text-decoration: underline;">Report</a>
+            </div>
+            <div style="margin-top: 24px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <span style="font-family: 'Outfit', 'Google Sans', sans-serif; font-size: 1.65rem; font-weight: 500; color: #5f6368; letter-spacing: -0.4px;">PrinceForm</span>
+            </div>
+        </footer>
         
     </div>
 
-    <!-- Floating Brand Watermark Badge -->
-    <div class="brand-watermark-badge">Powered by <a href="/">Prince Form</a> ⚡</div>
-
-    <!-- Client validation script -->
-    <script src="/static/js/form.js"></script>
+    <!-- Main form script — deferred so it never blocks page render -->
+    <script src="/static/js/form.js" defer></script>
 </body>
 </html>

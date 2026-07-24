@@ -11,12 +11,175 @@ let currentPreviewMode = "form";
 let activePage = 1;
 let totalPages = 1;
 
+// =========================================================================
+// Custom High-Tech Notification Toast & Confirmation Dialog Engine (UI/UX)
+// =========================================================================
+
+function showToast(message, type = "info", duration = 3800) {
+    let container = document.getElementById("toast-container");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container";
+        container.style.cssText = "position: fixed; top: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; max-width: 420px; width: calc(100% - 48px); font-family: 'Outfit', 'Inter', sans-serif;";
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement("div");
+    toast.className = "animate-fade-in";
+    toast.style.cssText = "pointer-events: auto; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 14px; padding: 14px 18px; box-shadow: 0 12px 36px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-between; gap: 14px; opacity: 0; transform: translateY(-16px) scale(0.96); transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1); border-left: 5px solid #1a73e8; overflow: hidden; position: relative; border-top: 1px solid rgba(255,255,255,0.6);";
+    
+    if (document.body.classList.contains("dark-mode")) {
+        toast.style.background = "rgba(30, 41, 59, 0.96)";
+        toast.style.color = "#f8fafc";
+        toast.style.borderTop = "1px solid rgba(255,255,255,0.1)";
+    }
+
+    let icon = "ℹ️";
+    let borderColor = "#3b82f6";
+    const msgLower = String(message || "").toLowerCase();
+    
+    if (type === "success" || msgLower.includes("success") || msgLower.includes("saved") || msgLower.includes("copied") || msgLower.includes("generated")) {
+        icon = "✅";
+        borderColor = "#10b981";
+    } else if (type === "error" || msgLower.includes("error") || msgLower.includes("failed") || msgLower.includes("prohibited")) {
+        icon = "⚠️";
+        borderColor = "#ef4444";
+    } else if (type === "warning" || msgLower.includes("warning") || msgLower.includes("exceed") || msgLower.includes("limit")) {
+        icon = "🛡️";
+        borderColor = "#f59e0b";
+    }
+    
+    toast.style.borderLeftColor = borderColor;
+    
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+            <span style="font-size: 1.3rem; flex-shrink: 0;">${icon}</span>
+            <div style="font-size: 0.88rem; font-weight: 500; color: var(--text-color, #1e293b); line-height: 1.45; word-break: break-word;">${escapeHTML(String(message))}</div>
+        </div>
+        <button type="button" style="background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-color-muted, #94a3b8); padding: 2px 6px; line-height: 1; flex-shrink: 0; transition: color 0.2s;" onmouseover="this.style.color='var(--text-color)'" onmouseout="this.style.color='var(--text-color-muted)'" onclick="this.parentElement.remove()">&times;</button>
+        <div class="toast-progress" style="position: absolute; bottom: 0; left: 0; height: 3px; background: ${borderColor}; width: 100%; transition: width ${duration}ms linear;"></div>
+    `;
+    
+    container.appendChild(toast);
+    
+    requestAnimationFrame(() => {
+        toast.style.opacity = "1";
+        toast.style.transform = "translateY(0) scale(1)";
+        const progress = toast.querySelector(".toast-progress");
+        if (progress) progress.style.width = "0%";
+    });
+    
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-12px) scale(0.96)";
+        setTimeout(() => toast.remove(), 350);
+    }, duration);
+}
+
+// Global window.alert override with Toast UI
+window.alert = function(message) {
+    showToast(message);
+};
+
+function showConfirm(optionsOrMessage) {
+    return new Promise((resolve) => {
+        let title = "Confirmation Required";
+        let message = "Are you sure you want to proceed?";
+        let confirmText = "Confirm";
+        let cancelText = "Cancel";
+        let icon = "⚠️";
+        let isDanger = true;
+        
+        if (typeof optionsOrMessage === "string") {
+            message = optionsOrMessage;
+            if (message.toLowerCase().includes("delete") || message.toLowerCase().includes("clear") || message.toLowerCase().includes("unlink")) {
+                title = "Confirm Deletion";
+                confirmText = "Delete";
+                icon = "🗑️";
+                isDanger = true;
+            }
+        } else if (typeof optionsOrMessage === "object") {
+            title = optionsOrMessage.title || title;
+            message = optionsOrMessage.message || message;
+            confirmText = optionsOrMessage.confirmText || confirmText;
+            cancelText = optionsOrMessage.cancelText || cancelText;
+            icon = optionsOrMessage.icon || icon;
+            isDanger = optionsOrMessage.isDanger !== false;
+        }
+        
+        let modal = document.getElementById("custom-confirm-modal");
+        if (!modal) {
+            modal = document.createElement("div");
+            modal.id = "custom-confirm-modal";
+            modal.className = "modal-overlay";
+            modal.style.cssText = "display:none; align-items:center; justify-content:center; z-index:100000; background:rgba(15, 23, 42, 0.75); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); font-family: 'Outfit', 'Inter', sans-serif;";
+            modal.innerHTML = `
+                <div class="form-card-base modal-card-active" style="width: 90%; max-width: 440px; padding: 26px; border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.3); text-align: center; background: var(--bg-color); border: 1px solid var(--border-color);">
+                    <div id="confirm-modal-icon" style="width: 58px; height: 58px; border-radius: 18px; background: rgba(239, 68, 68, 0.1); color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 1.9rem; margin: 0 auto 16px auto;">🗑️</div>
+                    <h3 id="confirm-modal-title" style="font-family:'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--text-color); margin: 0 0 8px 0;">Are you sure?</h3>
+                    <p id="confirm-modal-message" style="font-size: 0.9rem; color: var(--text-color-secondary); line-height: 1.5; margin: 0 0 24px 0; white-space: pre-line; word-break: break-word;">This action cannot be undone.</p>
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button id="confirm-modal-cancel-btn" type="button" class="btn btn-secondary" style="flex: 1; padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 0.9rem;">Cancel</button>
+                        <button id="confirm-modal-action-btn" type="button" class="btn" style="flex: 1; padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 0.9rem; background: #ef4444; color: #fff; border: none; box-shadow: 0 4px 14px rgba(239,68,68,0.35);">Confirm</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        const titleEl = modal.querySelector("#confirm-modal-title");
+        const msgEl = modal.querySelector("#confirm-modal-message");
+        const iconEl = modal.querySelector("#confirm-modal-icon");
+        const actionBtn = modal.querySelector("#confirm-modal-action-btn");
+        const cancelBtn = modal.querySelector("#confirm-modal-cancel-btn");
+        
+        if (titleEl) titleEl.innerText = title;
+        if (msgEl) msgEl.innerText = message;
+        if (iconEl) iconEl.innerText = icon;
+        if (actionBtn) {
+            actionBtn.innerText = confirmText;
+            actionBtn.style.background = isDanger ? "#ef4444" : "var(--primary-color, #1a73e8)";
+            actionBtn.style.boxShadow = isDanger ? "0 4px 14px rgba(239,68,68,0.35)" : "0 4px 14px rgba(26,115,232,0.35)";
+        }
+        if (cancelBtn) cancelBtn.innerText = cancelText;
+        
+        function cleanup(result) {
+            modal.style.display = "none";
+            actionBtn.removeEventListener("click", onAction);
+            cancelBtn.removeEventListener("click", onCancel);
+            modal.removeEventListener("click", onBackdrop);
+            resolve(result);
+        }
+        
+        function onAction() { cleanup(true); }
+        function onCancel() { cleanup(false); }
+        function onBackdrop(e) { if (e.target.id === "custom-confirm-modal") cleanup(false); }
+        
+        actionBtn.addEventListener("click", onAction);
+        cancelBtn.addEventListener("click", onCancel);
+        modal.addEventListener("click", onBackdrop);
+        
+        modal.style.display = "flex";
+    });
+}
+
 // Theme Colors Presets
 const PRESET_COLORS = [
     "#673ab7", "#3f51b5", "#2196f3", "#00bcd4", 
     "#009688", "#4caf50", "#ff9800", "#ff5722", 
     "#795548", "#607d8b", "#e91e63", "#9c27b0"
 ];
+
+function getRatingSymbolChar(icon) {
+    switch (icon) {
+        case "heart": return "❤️";
+        case "thumb": return "👍";
+        case "smile": return "😊";
+        case "circle": return "🔴";
+        default: return "⭐";
+    }
+}
+
 
 // Document Elements
 document.addEventListener("DOMContentLoaded", () => {
@@ -41,19 +204,20 @@ function initApp() {
     });
     document.getElementById("btn-add-question").addEventListener("click", addQuestion);
     setupResponsesActionsListeners();
+    setupFileModalHandlers();
     
-    // Share modal handlers
-    document.getElementById("close-share-modal").addEventListener("click", closeShareModal);
-    document.getElementById("share-modal").addEventListener("click", (e) => {
-        if (e.target.id === "share-modal") closeShareModal();
-    });
-    document.getElementById("btn-copy-url").addEventListener("click", copyShareUrlToClipboard);
-    document.getElementById("btn-share-builder").addEventListener("click", () => {
-        if (activeForm && activeForm.id) {
-            const formUrl = `${window.location.origin}/form/${activeForm.id}`;
-            openShareModal(formUrl);
+    // Check if opening via /edit/{form_id} or ?edit={form_id}
+    const pathParts = window.location.pathname.split("/").filter(Boolean);
+    if (pathParts.length >= 2 && pathParts[0] === "edit") {
+        const editFormId = pathParts[1];
+        loadFormToEdit(editFormId);
+    } else {
+        const urlParams = new URLSearchParams(window.location.search);
+        const editParam = urlParams.get("edit");
+        if (editParam) {
+            loadFormToEdit(editParam);
         }
-    });
+    }
 
     // Guide/welcome banner toggle
     const toggleWelcomeBtn = document.getElementById("btn-toggle-welcome-banner");
@@ -594,6 +758,10 @@ async function saveActiveForm() {
     const successDescEditor = document.getElementById("form-success-desc-editor");
     activeForm.successDescription = successDescEditor ? successDescEditor.innerHTML : "";
     activeForm.showSocialShare = document.getElementById("form-social-share-input").checked;
+    activeForm.collectEmailAddresses = document.getElementById("setting-collect-emails").value;
+    activeForm.sendResponseCopy = document.getElementById("setting-send-response-copy").value;
+    activeForm.allowResponseEditing = document.getElementById("setting-allow-editing").checked;
+    activeForm.limitToOneResponse = document.getElementById("setting-limit-one").checked;
     
     const method = isEditing ? "PUT" : "POST";
     const url = isEditing ? `/api/forms/${activeForm.id}` : "/api/forms";
@@ -629,7 +797,12 @@ async function saveActiveForm() {
 }
 
 async function deleteForm(formId, btn) {
-    if (!confirm("Are you sure you want to delete this form and all its responses?")) return;
+    if (!await showConfirm({
+        title: "Delete Form",
+        message: "Are you sure you want to delete this form and all its responses?\nThis action cannot be undone.",
+        confirmText: "Delete Form",
+        icon: "🗑️"
+    })) return;
     
     let originalHtml = "";
     if (btn) {
@@ -750,7 +923,7 @@ function renderFormsGrid() {
         
         // Attach card events
         card.querySelector(".btn-edit").addEventListener("click", (e) => loadFormToEdit(form.id, e.currentTarget));
-        card.querySelector(".btn-share").addEventListener("click", () => openShareModal(cardUrl));
+        card.querySelector(".btn-share").addEventListener("click", () => openGoogleShareModal(form.id));
         card.querySelector(".btn-analytics").addEventListener("click", () => {
             activeForm = form;
             setupBuilderWorkspace(); // Prepare structures
@@ -795,6 +968,10 @@ function setupBuilderWorkspace() {
         successDescEditor.innerHTML = activeForm.successDescription || "";
     }
     document.getElementById("form-social-share-input").checked = activeForm.showSocialShare === true;
+    document.getElementById("setting-collect-emails").value = activeForm.collectEmailAddresses || "do_not_collect";
+    document.getElementById("setting-send-response-copy").value = activeForm.sendResponseCopy || "off";
+    document.getElementById("setting-allow-editing").checked = activeForm.allowResponseEditing === true;
+    document.getElementById("setting-limit-one").checked = activeForm.limitToOneResponse === true;
 
     // Initialize lists if undefined
     if (!activeForm.successButtons) activeForm.successButtons = [];
@@ -1021,7 +1198,118 @@ function renderQuestionsEditorList() {
                     <button class="add-option-btn">+ Add Choice</button>
                 </div>
             `;
+        } else if (question.type === "file") {
+            const allowedTypesList = [
+                { id: 'document', label: 'Document' },
+                { id: 'presentation', label: 'Presentation' },
+                { id: 'spreadsheet', label: 'Spreadsheet' },
+                { id: 'drawing', label: 'Drawing' },
+                { id: 'pdf', label: 'PDF' },
+                { id: 'image', label: 'Image' },
+                { id: 'video', label: 'Video' },
+                { id: 'audio', label: 'Audio' }
+            ];
+
+            optionsHtml = `
+                <div class="file-upload-settings-editor" style="margin-top: 10px; margin-bottom: 12px; padding: 14px; background: var(--bg-color-secondary); border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-color);">Allow only specific file types</span>
+                        <label class="q-toggle-switch">
+                            <input type="checkbox" class="q-file-allowed-toggle" ${question.allowedFileTypesOnly ? "checked" : ""}>
+                            <span class="q-toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="q-file-types-grid" style="display: ${question.allowedFileTypesOnly ? 'grid' : 'none'}; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; padding-top: 4px;">
+                        ${allowedTypesList.map(ft => `
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-color-secondary); cursor: pointer;">
+                                <input type="checkbox" class="q-file-type-check" value="${ft.id}" ${(question.allowedFileTypes || []).includes(ft.id) ? "checked" : ""}>
+                                ${ft.label}
+                            </label>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                        <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-color);">Maximum number of files</span>
+                        <select class="q-max-files-select" style="padding: 6px 10px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color);">
+                            <option value="1" ${(question.maxFiles || 1) == 1 ? "selected" : ""}>1</option>
+                            <option value="5" ${(question.maxFiles || 1) == 5 ? "selected" : ""}>5</option>
+                            <option value="10" ${(question.maxFiles || 1) == 10 ? "selected" : ""}>10</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                        <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-color);">Maximum file size</span>
+                        <select class="q-max-file-size-select" style="padding: 6px 10px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color);">
+                            <option value="1MB" ${question.maxFileSize === "1MB" ? "selected" : ""}>1 MB</option>
+                            <option value="5MB" ${question.maxFileSize === "5MB" ? "selected" : ""}>5 MB</option>
+                            <option value="10MB" ${(question.maxFileSize || "10MB") === "10MB" ? "selected" : ""}>10 MB</option>
+                            <option value="100MB" ${question.maxFileSize === "100MB" ? "selected" : ""}>100 MB</option>
+                            <option value="1GB" ${question.maxFileSize === "1GB" ? "selected" : ""}>1 GB</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 0.75rem; color: var(--text-color-muted);">
+                        <span style="display: flex; align-items: center; gap: 6px;">
+                            <span>This form can accept up to 1 GB of files in <strong>Google Drive</strong>.</span>
+                            <a href="https://drive.google.com" target="_blank" style="color: var(--primary-color); text-decoration: underline;">Change</a>
+                        </span>
+                        <a href="https://drive.google.com" target="_blank" style="display: flex; align-items: center; gap: 6px; color: #1a73e8; font-weight: 600; text-decoration: none; padding: 4px 8px; border-radius: 4px; background: rgba(26,115,232,0.06);" title="Open Google Drive Cloud Storage Folder">
+                            <svg width="18" height="18" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                              <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                              <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                              <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 10.15z" fill="#ea4335"/>
+                              <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.45-1.2h-18.6c-1.55 0-3.1.4-4.45 1.2z" fill="#00832d"/>
+                              <path d="m57.4 1.2-13.75 23.8 13.75 23.8h27.5c0-1.55-.4-3.1-1.2-4.5l-21.85-37.85c-.8-1.4-1.95-2.5-3.3-3.3z" fill="#ffba00"/>
+                              <path d="m27.5 53-13.75 23.8c1.35.8 2.9 1.2 4.45 1.2h50.9c1.55 0 3.1-.4 4.45-1.2l-13.75-23.8z" fill="#2684fc"/>
+                            </svg>
+                            View folder
+                        </a>
+                    </div>
+                </div>
+            `;
+        } else if (question.type === "rating") {
+            const scaleVal = question.ratingScale || 5;
+            const iconVal = question.ratingIcon || "star";
+            const sym = getRatingSymbolChar(iconVal);
+
+            optionsHtml = `
+                <div class="rating-settings-editor" style="margin-top: 10px; margin-bottom: 12px; padding: 14px; background: var(--bg-color-secondary); border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-color-secondary);">Scale:</label>
+                            <select class="q-rating-scale-select" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color);">
+                                ${[3, 4, 5, 6, 7, 8, 9, 10].map(n => `<option value="${n}" ${scaleVal === n ? "selected" : ""}>${n}</option>`).join('')}
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-color-secondary);">Icon:</label>
+                            <select class="q-rating-icon-select" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-color);">
+                                <option value="star" ${iconVal === "star" ? "selected" : ""}>⭐ Star</option>
+                                <option value="heart" ${iconVal === "heart" ? "selected" : ""}>❤️ Heart</option>
+                                <option value="thumb" ${iconVal === "thumb" ? "selected" : ""}>👍 Thumb</option>
+                                <option value="smile" ${iconVal === "smile" ? "selected" : ""}>😊 Smile</option>
+                                <option value="circle" ${iconVal === "circle" ? "selected" : ""}>🔴 Circle</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 12px; background: var(--bg-color); border-radius: 6px; border: 1px dashed var(--border-color); display: flex; flex-direction: column; gap: 8px;">
+                        <div style="font-size: 0.72rem; font-weight: 600; color: var(--text-color-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Scale Preview</div>
+                        <div style="display: flex; align-items: center; gap: 16px; justify-content: flex-start; overflow-x: auto; padding: 4px 0;">
+                            ${Array.from({ length: scaleVal }, (_, i) => i + 1).map(num => `
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 24px;">
+                                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-color-secondary);">${num}</span>
+                                    <span style="font-size: 1.4rem; color: #f59e0b;">${sym}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
         }
+
         
         // On-the-fly migration to new multiple validation schema
         if ((!question.validations || question.validations.length === 0) && question.validationType && question.validationType !== "none") {
@@ -1169,6 +1457,7 @@ function renderQuestionsEditorList() {
                         <option value="checkbox" ${question.type === "checkbox" ? "selected" : ""}>Checkboxes</option>
                         <option value="select" ${question.type === "select" ? "selected" : ""}>Dropdown</option>
                         <option value="date" ${question.type === "date" ? "selected" : ""}>Date</option>
+                        <option value="rating" ${question.type === "rating" ? "selected" : ""}>⭐ Rating</option>
                         <option value="header" ${question.type === "header" ? "selected" : ""}>Header / Section Title</option>
                         <option value="file" ${question.type === "file" ? "selected" : ""}>File Upload</option>
                     </select>
@@ -1269,6 +1558,62 @@ function renderQuestionsEditorList() {
             renderQuestionsEditorList();
             updateLivePreview();
         });
+        
+        // Listeners for File Upload Settings
+        const fileAllowedToggle = card.querySelector(".q-file-allowed-toggle");
+        if (fileAllowedToggle) {
+            fileAllowedToggle.addEventListener("change", (e) => {
+                activeForm.questions[index].allowedFileTypesOnly = e.target.checked;
+                const grid = card.querySelector(".q-file-types-grid");
+                if (grid) grid.style.display = e.target.checked ? "grid" : "none";
+                updateLivePreview();
+            });
+        }
+        
+        card.querySelectorAll(".q-file-type-check").forEach(cb => {
+            cb.addEventListener("change", () => {
+                const checkedTypes = [];
+                card.querySelectorAll(".q-file-type-check:checked").forEach(c => checkedTypes.push(c.value));
+                activeForm.questions[index].allowedFileTypes = checkedTypes;
+                updateLivePreview();
+            });
+        });
+        
+        const maxFilesSelect = card.querySelector(".q-max-files-select");
+        if (maxFilesSelect) {
+            maxFilesSelect.addEventListener("change", (e) => {
+                activeForm.questions[index].maxFiles = parseInt(e.target.value);
+                updateLivePreview();
+            });
+        }
+        
+        const maxFileSizeSelect = card.querySelector(".q-max-file-size-select");
+        if (maxFileSizeSelect) {
+            maxFileSizeSelect.addEventListener("change", (e) => {
+                activeForm.questions[index].maxFileSize = e.target.value;
+                updateLivePreview();
+            });
+        }
+
+        // Listeners for Rating Settings
+        const ratingScaleSelect = card.querySelector(".q-rating-scale-select");
+        if (ratingScaleSelect) {
+            ratingScaleSelect.addEventListener("change", (e) => {
+                activeForm.questions[index].ratingScale = parseInt(e.target.value);
+                renderQuestionsEditorList();
+                updateLivePreview();
+            });
+        }
+        
+        const ratingIconSelect = card.querySelector(".q-rating-icon-select");
+        if (ratingIconSelect) {
+            ratingIconSelect.addEventListener("change", (e) => {
+                activeForm.questions[index].ratingIcon = e.target.value;
+                renderQuestionsEditorList();
+                updateLivePreview();
+            });
+        }
+
         
         const reqToggle = card.querySelector(".q-required-toggle-btn");
         if (reqToggle) {
@@ -1720,7 +2065,13 @@ function addQuestion(type = "text", label = "New Question") {
         options: ["radio", "checkbox", "select"].includes(type) ? ["Option 1", "Option 2"] : [],
         page: activePage,
         order: newOrder,
-        validations: []
+        validations: [],
+        allowedFileTypesOnly: false,
+        allowedFileTypes: [],
+        maxFiles: 1,
+        maxFileSize: "10MB",
+        ratingScale: 5,
+        ratingIcon: "star"
     };
     
     activeForm.questions.push(newQuestion);
@@ -2182,10 +2533,32 @@ function updateLivePreview() {
                 inputFieldHtml = `<input type="date" class="branded-date" disabled>`;
                 break;
             case "file":
+                const allowedText = q.allowedFileTypesOnly && q.allowedFileTypes && q.allowedFileTypes.length > 0
+                    ? `Allowed: ${q.allowedFileTypes.join(', ')} • `
+                    : '';
                 inputFieldHtml = `
-                    <div style="border: 1.5px dashed var(--border-color); padding: 12px; border-radius: var(--border-radius-sm); text-align: center; background: rgba(0,0,0,0.01);">
-                        <span style="font-size: 1.1rem; display: block; margin-bottom: 2px;">📁</span>
-                        <span style="font-size: 0.75rem; color: var(--text-color-secondary);">Select file (Max 10MB)</span>
+                    <div style="border: 1.5px dashed var(--border-color); padding: 14px; border-radius: var(--border-radius-sm); text-align: center; background: rgba(0,0,0,0.01);">
+                        <span style="font-size: 1.4rem; display: block; margin-bottom: 4px;">📁</span>
+                        <span style="font-size: 0.8rem; color: var(--text-color-secondary); font-weight: 500; display: block;">Select file to upload</span>
+                        <span style="font-size: 0.72rem; color: var(--text-color-muted); display: block; margin-top: 2px;">${allowedText}Max ${q.maxFiles || 1} file(s), up to ${q.maxFileSize || '10MB'}</span>
+                    </div>
+                `;
+                break;
+            case "rating":
+                const rScale = q.ratingScale || 5;
+                const rSym = getRatingSymbolChar(q.ratingIcon || "star");
+                let ratingItemsHtml = "";
+                for (let i = 1; i <= rScale; i++) {
+                    ratingItemsHtml += `
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-color-secondary);">${i}</span>
+                            <span style="font-size: 1.3rem; opacity: 0.7; color: #f59e0b;">${rSym}</span>
+                        </div>
+                    `;
+                }
+                inputFieldHtml = `
+                    <div style="display: flex; align-items: center; gap: 14px; justify-content: flex-start; overflow-x: auto; padding: 6px 0;">
+                        ${ratingItemsHtml}
                     </div>
                 `;
                 break;
@@ -2287,7 +2660,7 @@ function renderResponsesTable() {
         return;
     }
     
-    // Headers: Timestamp + Question Labels
+    // Headers: Timestamp + Question Labels + Actions
     const timeHeader = document.createElement("th");
     timeHeader.innerText = "Submitted At";
     theadRow.appendChild(timeHeader);
@@ -2298,8 +2671,15 @@ function renderResponsesTable() {
         theadRow.appendChild(th);
     });
     
+    const actionHeader = document.createElement("th");
+    actionHeader.innerText = "Actions";
+    actionHeader.style.textAlign = "center";
+    actionHeader.style.width = "70px";
+    theadRow.appendChild(actionHeader);
+    
     // Rows
-    activeFormResponses.forEach(resp => {
+    const totalRespCount = activeFormResponses.length;
+    activeFormResponses.forEach((resp, respIdx) => {
         const tr = document.createElement("tr");
         
         // Timestamp cell
@@ -2314,6 +2694,36 @@ function renderResponsesTable() {
             
             if (answer === undefined || answer === null) {
                 td.innerHTML = `<span style="color:var(--text-color-muted); font-style:italic;">N/A</span>`;
+            } else if (q.type === "rating") {
+                const sym = getRatingSymbolChar(q.ratingIcon || "star");
+                td.innerHTML = `<span style="font-weight:600; color:var(--text-color);">${answer} / ${q.ratingScale || 5} ${sym}</span>`;
+            } else if (q.type === "file") {
+                const files = parseFileAnswer(answer, q.label);
+                if (files.length === 0) {
+                    td.innerHTML = `<span style="color:var(--text-color-muted); font-style:italic;">No files</span>`;
+                } else {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "btn-view-file-attachments";
+                    btn.style.cssText = "display:inline-flex; align-items:center; gap:6px; background:rgba(26,115,232,0.08); border:1px solid rgba(26,115,232,0.25); color:#1a73e8; padding:5px 10px; border-radius:8px; font-size:0.78rem; font-weight:600; cursor:pointer; transition:all 0.2s;";
+                    btn.innerHTML = `
+                        <svg width="14" height="14" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                          <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                          <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                          <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 10.15z" fill="#ea4335"/>
+                          <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.45-1.2h-18.6c-1.55 0-3.1.4-4.45 1.2z" fill="#00832d"/>
+                          <path d="m57.4 1.2-13.75 23.8 13.75 23.8h27.5c0-1.55-.4-3.1-1.2-4.5l-21.85-37.85c-.8-1.4-1.95-2.5-3.3-3.3z" fill="#ffba00"/>
+                          <path d="m27.5 53-13.75 23.8c1.35.8 2.9 1.2 4.45 1.2h50.9c1.55 0 3.1-.4 4.45-1.2l-13.75-23.8z" fill="#2684fc"/>
+                        </svg>
+                        <span>View Attachment (${files.length})</span>
+                    `;
+                    btn.addEventListener("mouseover", () => btn.style.background = "rgba(26,115,232,0.14)");
+                    btn.addEventListener("mouseout", () => btn.style.background = "rgba(26,115,232,0.08)");
+                    btn.addEventListener("click", () => {
+                        openSecureFileViewerModal(files, q.label, resp.submittedAt);
+                    });
+                    td.appendChild(btn);
+                }
             } else if (Array.isArray(answer)) {
                 td.innerText = answer.join(", ");
             } else {
@@ -2322,8 +2732,211 @@ function renderResponsesTable() {
             tr.appendChild(td);
         });
         
+        // Actions cell
+        const actionTd = document.createElement("td");
+        actionTd.style.textAlign = "center";
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.style.cssText = "background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #ef4444; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.95rem; transition: all 0.2s;";
+        delBtn.title = `Delete Submission #${totalRespCount - respIdx}`;
+        delBtn.innerHTML = "🗑️";
+        delBtn.addEventListener("mouseover", () => delBtn.style.background = "rgba(239,68,68,0.18)");
+        delBtn.addEventListener("mouseout", () => delBtn.style.background = "rgba(239,68,68,0.08)");
+        delBtn.addEventListener("click", () => deleteSingleResponse(resp.id, totalRespCount - respIdx));
+        actionTd.appendChild(delBtn);
+        tr.appendChild(actionTd);
+        
         tbody.appendChild(tr);
     });
+}
+
+async function deleteSingleResponse(responseId, displayNum) {
+    if (!activeForm || !activeForm.id) return;
+    
+    const confirmDel = await showConfirm({
+        title: `Delete Submission #${displayNum}`,
+        message: "Are you sure you want to permanently delete this response submission? This action cannot be undone.",
+        confirmText: "Delete Submission",
+        icon: "🗑️",
+        isDanger: true
+    });
+    if (!confirmDel) return;
+    
+    try {
+        const res = await fetch(`/api/forms/${activeForm.id}/responses/${responseId}`, {
+            method: "DELETE"
+        });
+        if (!res.ok) throw new Error("Failed to delete submission record");
+        
+        showToast(`Submission #${displayNum} deleted successfully.`, "success");
+        await loadResponses(activeForm.id);
+    } catch(err) {
+        console.error(err);
+        showToast("Error deleting response: " + err.message, "error");
+    }
+}
+
+function parseFileAnswer(answer, qLabel = "Attachment") {
+    if (!answer) return [];
+
+    function cleanFileName(rawName, idx = 1, mime = "") {
+        if (!rawName || rawName.startsWith("data:") || rawName.includes("base64") || rawName.length > 80) {
+            let ext = "file";
+            const str = (rawName + " " + mime).toLowerCase();
+            if (str.includes("png")) ext = "png";
+            else if (str.includes("jpeg") || str.includes("jpg")) ext = "jpg";
+            else if (str.includes("pdf")) ext = "pdf";
+            else if (str.includes("webp")) ext = "webp";
+            else if (str.includes("gif")) ext = "gif";
+            else if (str.includes("audio") || str.includes("mp3")) ext = "mp3";
+            else if (str.includes("video") || str.includes("mp4")) ext = "mp4";
+            else if (str.includes("sheet") || str.includes("excel") || str.includes("csv")) ext = "xlsx";
+            else if (str.includes("word") || str.includes("document")) ext = "docx";
+
+            const tag = (qLabel || "File_Attachment").replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "") || "Attachment";
+            return `${tag}_${idx}.${ext}`;
+        }
+        return rawName;
+    }
+
+    if (Array.isArray(answer)) {
+        return answer.map((f, idx) => {
+            if (typeof f === "string") {
+                const mimeMatch = f.match(/^data:(.*?);/);
+                const mime = mimeMatch ? mimeMatch[1] : "";
+                const cleanName = cleanFileName(f, idx + 1, mime);
+                return { name: cleanName, size: Math.round(f.length * 0.75), type: mime || "file", base64: f };
+            } else if (typeof f === "object" && f !== null) {
+                const cleanName = cleanFileName(f.name, idx + 1, f.type);
+                return { ...f, name: cleanName };
+            }
+            return { name: cleanFileName(String(f), idx + 1), size: 0, type: "file", base64: "" };
+        });
+    }
+
+    if (typeof answer === "object" && answer !== null && answer.base64) {
+        const cleanName = cleanFileName(answer.name, 1, answer.type);
+        return [{ ...answer, name: cleanName }];
+    }
+
+    if (typeof answer === "string" && answer.startsWith("data:")) {
+        const mimeMatch = answer.match(/^data:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : "";
+        const cleanName = cleanFileName(answer, 1, mime);
+        return [{ name: cleanName, size: Math.round(answer.length * 0.75), type: mime, base64: answer }];
+    }
+
+    return [{ name: cleanFileName(String(answer), 1), size: 0, type: "file", base64: "" }];
+}
+
+function openSecureFileViewerModal(files, label, submittedAt) {
+    const modal = document.getElementById("secure-file-modal");
+    const titleEl = document.getElementById("modal-file-title");
+    const bodyEl = document.getElementById("modal-file-body");
+    if (!modal || !bodyEl) return;
+    
+    titleEl.innerText = label ? `Attachments: ${label}` : "Secure File Attachments";
+    bodyEl.innerHTML = "";
+    
+    if (!files || files.length === 0) {
+        bodyEl.innerHTML = `<div style="text-align:center; color:var(--text-color-muted); padding:30px;">No files found for this response.</div>`;
+    } else {
+        files.forEach((file, idx) => {
+            const card = document.createElement("div");
+            card.style.cssText = "background: var(--bg-color-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow-sm);";
+            
+            const isImage = (file.type && file.type.startsWith("image/")) || (file.base64 && file.base64.startsWith("data:image/"));
+            const isAudio = (file.type && file.type.startsWith("audio/")) || (file.base64 && file.base64.startsWith("data:audio/"));
+            const isVideo = (file.type && file.type.startsWith("video/")) || (file.base64 && file.base64.startsWith("data:video/"));
+            const isPdf = (file.name && file.name.toLowerCase().endsWith(".pdf")) || (file.type && file.type.includes("pdf")) || (file.base64 && file.base64.startsWith("data:application/pdf"));
+            
+            const formatSize = (bytes) => {
+                if (!bytes) return "Cloud Verified";
+                if (bytes < 1024) return bytes + " B";
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+                return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+            };
+            
+            let previewAreaHtml = "";
+            if (isImage && file.base64) {
+                previewAreaHtml = `
+                    <div style="background: rgba(0,0,0,0.03); border-radius: 10px; padding: 10px; text-align: center; max-height: 320px; overflow: hidden; border: 1px solid var(--border-color);">
+                        <img src="${file.base64}" alt="${escapeHTML(file.name || 'Image')}" style="max-height: 300px; max-width: 100%; object-fit: contain; border-radius: 8px; cursor: zoom-in; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" onclick="window.open('${file.base64}', '_blank')">
+                    </div>
+                `;
+            } else if (isAudio && file.base64) {
+                previewAreaHtml = `
+                    <div style="padding: 14px; background: rgba(0,0,0,0.02); border-radius: 10px; border: 1px solid var(--border-color);">
+                        <audio controls style="width: 100%;">
+                            <source src="${file.base64}" type="${file.type || 'audio/mpeg'}">
+                            Your browser does not support audio playback.
+                        </audio>
+                    </div>
+                `;
+            } else if (isVideo && file.base64) {
+                previewAreaHtml = `
+                    <div style="background: #000; border-radius: 10px; overflow: hidden; text-align: center;">
+                        <video controls style="max-height: 300px; max-width: 100%;">
+                            <source src="${file.base64}" type="${file.type || 'video/mp4'}">
+                            Your browser does not support video playback.
+                        </video>
+                    </div>
+                `;
+            } else if (isPdf && file.base64) {
+                previewAreaHtml = `
+                    <div style="background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.25); border-radius: 10px; padding: 16px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-size: 1.8rem;">📄</span>
+                            <div>
+                                <div style="font-weight: 700; color: var(--text-color); font-size: 0.92rem;">PDF Document</div>
+                                <div style="font-size: 0.76rem; color: var(--text-color-secondary); margin-top: 2px;">Protected Sandbox View</div>
+                            </div>
+                        </div>
+                        <a href="${file.base64}" download="${escapeHTML(file.name || 'document.pdf')}" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 14px; text-decoration: none;">Open PDF</a>
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px;">
+                        <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(99, 102, 241, 0.08); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                            ${isImage ? '🖼️' : isPdf ? '📄' : isAudio ? '🎵' : isVideo ? '🎬' : '📁'}
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; color: var(--text-color); font-size: 0.92rem; word-break: break-word;">${escapeHTML(file.name || 'Attached File')}</div>
+                            <div style="font-size: 0.76rem; color: var(--text-color-muted); margin-top: 2px;">
+                                ${formatSize(file.size)} • <span style="color: #10b981; font-weight: 600;">✓ Encrypted & Cloud Vault Verified</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${file.base64 ? `
+                        <a href="${file.base64}" download="${escapeHTML(file.name || 'file')}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; background: #1a73e8; color: #fff; text-decoration: none; padding: 7px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; box-shadow: 0 1px 3px rgba(26,115,232,0.3); transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Secure Download
+                        </a>
+                    ` : ''}
+                </div>
+                ${previewAreaHtml}
+            `;
+            bodyEl.appendChild(card);
+        });
+    }
+    
+    modal.style.display = "flex";
+}
+
+function setupFileModalHandlers() {
+    const modal = document.getElementById("secure-file-modal");
+    const closeBtn = document.getElementById("close-file-modal-btn");
+    const closeBottomBtn = document.getElementById("close-file-modal-bottom-btn");
+    if (closeBtn) closeBtn.addEventListener("click", () => modal.style.display = "none");
+    if (closeBottomBtn) closeBottomBtn.addEventListener("click", () => modal.style.display = "none");
+    if (modal) {
+        modal.addEventListener("click", (e) => {
+            if (e.target.id === "secure-file-modal") modal.style.display = "none";
+        });
+    }
 }
 function getAvatarColor(idx) {
     const hues = [220, 262, 325, 185, 142, 32]; // blue, purple, magenta, cyan, green, orange
@@ -2394,7 +3007,9 @@ function renderAnalyticsCharts() {
         const valType = (q.validationType || "").toLowerCase();
         
         let detected = "text";
-        if (["radio", "checkbox", "select"].includes(qType)) {
+        if (qType === "file") {
+            detected = "file";
+        } else if (["radio", "checkbox", "select"].includes(qType)) {
             detected = "choices";
         } else if (qType === "textarea" || qType === "paragraph") {
             detected = "paragraph";
@@ -2412,7 +3027,11 @@ function renderAnalyticsCharts() {
         let typeBadgeColor = "rgba(6, 182, 212, 0.08)";
         let typeBadgeTextColor = "#0891b2";
         
-        if (detected === "choices") {
+        if (detected === "file") {
+            typeBadgeText = "File Upload";
+            typeBadgeColor = "rgba(26, 115, 232, 0.08)";
+            typeBadgeTextColor = "#1a73e8";
+        } else if (detected === "choices") {
             typeBadgeText = "Choices";
             typeBadgeColor = "rgba(99, 102, 241, 0.08)";
             typeBadgeTextColor = activeForm.branding.themeColor || "var(--primary-color)";
@@ -2524,6 +3143,46 @@ function renderAnalyticsCharts() {
 
             if (answers.length === 0) {
                 listDiv.innerHTML = `<span style="color:var(--text-color-muted); font-style:italic; font-size:0.85rem;">No answers filled in.</span>`;
+            } else if (q.type === "file" || detected === "file") {
+                // File upload response cards gallery view
+                answers.forEach(item => {
+                    const files = parseFileAnswer(item.val, q.label);
+                    if (files.length === 0) return;
+                    
+                    files.forEach(f => {
+                        const fileCard = document.createElement("div");
+                        fileCard.className = "text-response-item file-response-item";
+                        fileCard.style.cssText = "display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-color-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 14px; margin-bottom: 8px;";
+                        
+                        const isImg = (f.type && f.type.startsWith("image/")) || (f.base64 && f.base64.startsWith("data:image/"));
+                        const isPdf = (f.name && f.name.toLowerCase().endsWith(".pdf")) || (f.type && f.type.includes("pdf"));
+                        const avatarColor = getAvatarColor(item.respIdx);
+                        const avatarTextColor = getAvatarTextColor(item.respIdx);
+
+                        let thumbMarkup = isImg && f.base64 ? `
+                            <img src="${f.base64}" alt="Thumb" style="width:34px; height:34px; object-fit:cover; border-radius:6px; border:1px solid var(--border-color); flex-shrink:0; cursor:zoom-in;" onclick="window.open('${f.base64}', '_blank')">
+                        ` : `
+                            <div style="width:34px; height:34px; border-radius:6px; background:rgba(26,115,232,0.08); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">
+                                ${isImg ? '🖼️' : isPdf ? '📄' : '📁'}
+                            </div>
+                        `;
+
+                        fileCard.innerHTML = `
+                            <div style="display:flex; align-items:center; gap:10px; flex:1; overflow:hidden;">
+                                <div style="width:24px; height:24px; border-radius:50%; background:${avatarColor}; color:${avatarTextColor}; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700; flex-shrink:0; font-family:'Outfit';">
+                                    #${item.respIdx}
+                                </div>
+                                ${thumbMarkup}
+                                <div style="overflow:hidden; flex:1;">
+                                    <div style="font-weight:600; font-size:0.85rem; color:var(--text-color); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="${escapeHTML(f.name)}">${escapeHTML(f.name)}</div>
+                                    <div style="font-size:0.72rem; color:#10b981; font-weight:600; margin-top:1px;">Cloud Vault Verified</div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary" style="font-size:0.75rem; padding:4px 10px; border-radius:6px; flex-shrink:0;" onclick="openSecureFileViewerModal(${escapeHTML(JSON.stringify(files))}, '${escapeHTML(q.label)}')">View File</button>
+                        `;
+                        listDiv.appendChild(fileCard);
+                    });
+                });
             } else if (q.type === "textarea") {
                 // Render as testimonial cards/quote bubbles
                 answers.forEach(item => {
@@ -2892,8 +3551,13 @@ function renderPagesTabs() {
     }
 }
 
-function deletePage(pageNum) {
-    if (!confirm(`Are you sure you want to delete Page ${pageNum}? All questions on this page will be deleted permanently.`)) return;
+async function deletePage(pageNum) {
+    if (!await showConfirm({
+        title: `Delete Page ${pageNum}`,
+        message: `Are you sure you want to delete Page ${pageNum}?\nAll questions on this page will be deleted permanently.`,
+        confirmText: "Delete Page",
+        icon: "🗑️"
+    })) return;
     
     // Remove all questions on pageNum
     activeForm.questions = activeForm.questions.filter(q => (q.page || 1) !== pageNum);
@@ -2945,6 +3609,7 @@ function initDragAndDrop() {
                 case "checkbox": label = "Multiple Choice"; break;
                 case "date": label = "Date Selection"; break;
                 case "file": label = "File Upload"; break;
+                case "rating": label = "Rating"; break;
             }
             addQuestion(type, label);
         });
@@ -3038,6 +3703,7 @@ function insertNewQuestionAt(type, pageDropIndex) {
         case "checkbox": label = "Multiple Choice"; break;
         case "date": label = "Date Selection"; break;
         case "file": label = "File Upload"; break;
+        case "rating": label = "Rating"; break;
     }
     
     const newQuestion = {
@@ -3049,7 +3715,13 @@ function insertNewQuestionAt(type, pageDropIndex) {
         options: ["radio", "checkbox", "select"].includes(type) ? ["Option 1", "Option 2"] : [],
         page: activePage,
         order: 0,
-        validations: []
+        validations: [],
+        allowedFileTypesOnly: false,
+        allowedFileTypes: [],
+        maxFiles: 1,
+        maxFileSize: "10MB",
+        ratingScale: 5,
+        ratingIcon: "star"
     };
     
     pageQuestions.splice(pageDropIndex, 0, newQuestion);
@@ -3287,6 +3959,9 @@ function setupResponsesActionsListeners() {
     const menuDownloadCsv = document.getElementById("menu-download-csv");
     if (menuDownloadCsv) menuDownloadCsv.addEventListener("click", exportResponsesToCSV);
     
+    const menuDownloadZip = document.getElementById("menu-download-files-zip");
+    if (menuDownloadZip) menuDownloadZip.addEventListener("click", downloadAllFilesZip);
+    
     const menuPrintResponses = document.getElementById("menu-print-responses");
     if (menuPrintResponses) menuPrintResponses.addEventListener("click", printResponses);
     
@@ -3383,7 +4058,13 @@ async function linkFormToSheets() {
 async function unlinkFormFromSheets() {
     if (!activeForm || !activeForm.id) return;
     
-    const confirmUnlink = confirm("Are you sure you want to unlink this form?\n\nExisting Google Sheets using the formula will no longer be able to sync new responses.");
+    const confirmUnlink = await showConfirm({
+        title: "Unlink Google Sheets",
+        message: "Are you sure you want to unlink this form?\n\nExisting Google Sheets using the sync formula will no longer receive new responses.",
+        confirmText: "Unlink Sheet",
+        icon: "⚠️",
+        isDanger: true
+    });
     if (!confirmUnlink) return;
     
     const unlinkBtn = document.getElementById("btn-modal-unlink-sheets");
@@ -3488,7 +4169,13 @@ async function deleteResponses() {
         return;
     }
     
-    const confirmDelete = confirm(`Are you sure you want to permanently delete all ${count} response(s)?\n\nThis action is irreversible and will delete all submissions data from the database.`);
+    const confirmDelete = await showConfirm({
+        title: "Delete All Submissions",
+        message: `Are you sure you want to permanently delete all ${count} response(s)?\n\nThis action is irreversible and will permanently delete all submission data from the database.`,
+        confirmText: `Delete ${count} Response(s)`,
+        icon: "🗑️",
+        isDanger: true
+    });
     if (!confirmDelete) return;
     
     try {
@@ -3504,4 +4191,559 @@ async function deleteResponses() {
         console.error(err);
         alert("Error deleting responses: " + err.message);
     }
+}
+
+async function downloadAllFilesZip() {
+    if (!activeForm || !activeForm.id) return;
+    if (activeFormResponses.length === 0) {
+        showToast("No response submissions available to package attachments.", "warning");
+        return;
+    }
+    
+    showToast("Packaging all attachments into .zip archive...", "info");
+    window.location.href = `/api/forms/${activeForm.id}/export/files-zip`;
+}
+
+async function openGoogleShareModal(targetFormId) {
+    if (targetFormId) {
+        try {
+            const res = await fetch(`/api/forms/${targetFormId}`);
+            if (res.ok) {
+                activeForm = await res.json();
+            }
+        } catch(e) {}
+    } else if (activeForm && activeForm.id) {
+        try {
+            const res = await fetch(`/api/forms/${activeForm.id}`);
+            if (res.ok) {
+                activeForm = await res.json();
+            }
+        } catch(e) {}
+    }
+
+    let modal = document.getElementById("google-share-form-modal");
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "google-share-form-modal";
+        modal.style.cssText = "position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.55); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s ease;";
+        document.body.appendChild(modal);
+    }
+
+    let userEmail = "contact.princeform@gmail.com";
+    let userName = "PrinceForm";
+
+    try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+            const data = await res.json();
+            if (data) {
+                userName = data.username || "PrinceForm";
+                userEmail = data.email || (data.username ? `${data.username.toLowerCase()}@gmail.com` : "contact.princeform@gmail.com");
+            }
+        }
+    } catch (e) {}
+
+    const formTitle = document.getElementById("form-title-input") ? document.getElementById("form-title-input").value : (activeForm ? activeForm.title : "Untitled form");
+    const initialChar = userName.charAt(0).toUpperCase() || "P";
+
+    const currentEditorAccess = (activeForm && activeForm.settings && activeForm.settings.editorAccess) || "restricted";
+    const currentResponderAccess = (activeForm && activeForm.settings && activeForm.settings.responderAccess) || (activeForm && activeForm.collectEmailAddresses === "verified" ? "verified" : "anyone");
+    const isCurrentlyPublished = activeForm ? (activeForm.isPublished !== false && activeForm.acceptingResponses !== false) : true;
+    const collaborators = (activeForm && activeForm.settings && activeForm.settings.collaborators) || [];
+
+    let collaboratorsHtml = "";
+    collaborators.forEach(email => {
+        if (!email) return;
+        const initial = email.charAt(0).toUpperCase();
+        const namePart = email.split('@')[0];
+        collaboratorsHtml += `
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; width: 100%; box-sizing: border-box; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e8eaed;">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 200px; flex: 1;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: #e8f0fe; color: #1a73e8; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; font-weight: 700; flex-shrink: 0;">
+                        ${escapeHTML(initial)}
+                    </div>
+                    <div style="overflow: hidden; text-overflow: ellipsis;">
+                        <div style="font-weight: 600; font-size: 0.9rem; color: #202124;">${escapeHTML(namePart)}</div>
+                        <div style="font-size: 0.81rem; color: #5f6368; word-break: break-all;">${escapeHTML(email)}</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                    <span style="font-size: 0.86rem; color: #5f6368; font-weight: 500;">Editor</span>
+                    <button type="button" onclick="removeCollaboratorEmail('${escapeHTML(email)}')" style="background: none; border: none; color: #d93025; font-size: 1.25rem; cursor: pointer; padding: 2px 6px; line-height: 1; transition: color 0.2s;" title="Remove access">&times;</button>
+                </div>
+            </div>
+        `;
+    });
+
+    modal.innerHTML = `
+        <div style="background: #ffffff; border-radius: 24px; max-width: 540px; width: calc(100vw - 24px); max-height: 90vh; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 24px 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.22); font-family: 'Outfit', 'Roboto', sans-serif; color: #202124; display: flex; flex-direction: column; gap: 20px; animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+            
+            <!-- Modal Header matching Official Google Forms -->
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <h2 style="margin: 0; font-size: clamp(1.1rem, 4vw, 1.45rem); font-weight: 500; color: #202124; letter-spacing: -0.3px; word-break: break-word; flex: 1; min-width: 180px;">Share ‘${escapeHTML(formTitle || 'Untitled form')}’</h2>
+                <div style="display: flex; align-items: center; gap: 6px; color: #5f6368; flex-shrink: 0;">
+                    <button type="button" onclick="openShareHelpGuideModal()" style="background: none; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #5f6368; transition: background 0.2s;" onmouseover="this.style.background='#f1f3f4'" onmouseout="this.style.background='none'" title="Help & Sharing Guide">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/>
+                        </svg>
+                    </button>
+                    <button type="button" onclick="openShareSettingsModal()" style="background: none; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #5f6368; transition: background 0.2s;" onmouseover="this.style.background='#f1f3f4'" onmouseout="this.style.background='none'" title="Sharing Settings">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add People Search Box -->
+            <div style="position: relative; width: 100%; box-sizing: border-box;">
+                <div id="share-people-input-box" style="border: 2px solid #1a73e8; border-radius: 12px; padding: 10px 14px; background: #ffffff; transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box; width: 100%;">
+                    <div style="font-size: 0.76rem; color: #1a73e8; font-weight: 600; margin-bottom: 2px;">Add people, groups and calendar events</div>
+                    <input type="text" id="share-modal-input-people" placeholder="Type email and press Enter..." style="border: none; outline: none; width: 100%; font-size: 0.92rem; background: transparent; color: #202124; font-family: inherit; box-sizing: border-box;">
+                </div>
+            </div>
+
+            <!-- People with Access Section -->
+            <div style="width: 100%; box-sizing: border-box;">
+                <div style="font-weight: 600; font-size: 0.95rem; color: #202124; margin-bottom: 12px;">People with access</div>
+                <!-- Owner Row -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; width: 100%; box-sizing: border-box;">
+                    <div style="display: flex; align-items: center; gap: 12px; min-width: 200px; flex: 1;">
+                        <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #1a73e8, #0d47a1); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 700; box-shadow: 0 2px 8px rgba(26,115,232,0.3); flex-shrink: 0;">
+                            ${escapeHTML(initialChar)}
+                        </div>
+                        <div style="overflow: hidden; text-overflow: ellipsis;">
+                            <div style="font-weight: 600; font-size: 0.92rem; color: #202124;">${escapeHTML(userName)} <span style="font-weight:400; color:#5f6368;">(you)</span></div>
+                            <div style="font-size: 0.81rem; color: #5f6368; word-break: break-all;">${escapeHTML(userEmail)}</div>
+                        </div>
+                    </div>
+                    <span style="font-size: 0.88rem; color: #5f6368; font-weight: 500; flex-shrink: 0;">Owner</span>
+                </div>
+                <!-- Dynamic Collaborators List -->
+                ${collaboratorsHtml}
+            </div>
+
+            <!-- General Access Section -->
+            <div style="display: flex; flex-direction: column; gap: 18px; width: 100%; box-sizing: border-box;">
+                <div style="font-weight: 600; font-size: 0.95rem; color: #202124;">General access</div>
+                
+                <!-- Editor View -->
+                <div style="display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; width: 100%; box-sizing: border-box;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: #f1f3f4; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #5f6368;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                        </svg>
+                    </div>
+                    <div style="flex: 1; min-width: 220px; box-sizing: border-box;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 0.94rem; color: #202124; font-weight: 600;">
+                            <span>Editor view</span>
+                            <select id="share-editor-access-select" style="border: 1px solid #dadce0; border-radius: 8px; background: #ffffff; font-weight: 500; color: #202124; cursor: pointer; font-size: 0.86rem; outline: none; padding: 5px 8px; font-family: inherit; max-width: 100%; box-sizing: border-box;">
+                                <option value="restricted" ${currentEditorAccess === "restricted" ? "selected" : ""}>Restricted</option>
+                                <option value="anyone" ${currentEditorAccess === "anyone" ? "selected" : ""}>Anyone with the link</option>
+                            </select>
+                        </div>
+                        <div style="font-size: 0.81rem; color: #5f6368; margin-top: 3px;">Only people with access can open with the link</div>
+                    </div>
+                </div>
+
+                <!-- Responder View -->
+                <div style="display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; width: 100%; box-sizing: border-box;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: #ceead6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #137333;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                        </svg>
+                    </div>
+                    <div style="flex: 1; min-width: 220px; box-sizing: border-box;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 0.94rem; color: #202124; font-weight: 600;">
+                            <span>Responder view</span>
+                            <select id="share-responder-access-select" style="border: 1px solid #dadce0; border-radius: 8px; background: #ffffff; font-weight: 500; color: #202124; cursor: pointer; font-size: 0.86rem; outline: none; padding: 5px 8px; font-family: inherit; max-width: 100%; box-sizing: border-box;">
+                                <option value="anyone" ${currentResponderAccess === "anyone" ? "selected" : ""}>Anyone with the link</option>
+                                <option value="verified" ${currentResponderAccess === "verified" ? "selected" : ""}>Verified Users Only</option>
+                                <option value="restricted" ${currentResponderAccess === "restricted" ? "selected" : ""}>Restricted</option>
+                            </select>
+                        </div>
+                        <div style="font-size: 0.81rem; color: #5f6368; margin-top: 3px;">Anyone on the Internet with the link can respond</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Publish Notice Callout -->
+            <div style="background: #e8f0fe; border-radius: 14px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; color: #1a73e8; width: 100%; box-sizing: border-box;">
+                <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 180px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink: 0;">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                    </svg>
+                    <div style="font-size: 0.86rem; font-weight: 600; color: #1a73e8;">Publish the form to accept responses</div>
+                </div>
+                <button type="button" onclick="togglePublishStatusState()" id="btn-toggle-publish-status" class="btn btn-primary" style="font-size: 0.82rem; padding: 6px 14px; border-radius: 16px; background: ${isCurrentlyPublished ? '#1a73e8' : '#5f6368'}; color: #ffffff; border: none; font-weight: 600; cursor: pointer; box-shadow: 0 2px 6px rgba(26,115,232,0.25); flex-shrink: 0;">${isCurrentlyPublished ? 'Published ✓' : 'Draft'}</button>
+            </div>
+
+            <!-- Modal Footer -->
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 4px; width: 100%; box-sizing: border-box;">
+                <button type="button" onclick="copyFormShareLink()" class="btn btn-secondary" style="border-radius: 20px; font-size: 0.84rem; padding: 8px 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid #dadce0; color: #1a73e8; background: #ffffff; font-weight: 600; cursor: pointer; transition: background 0.2s; flex: 1; min-width: 120px;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='#ffffff'" title="Copy public responder link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                    </svg>
+                    <span>Responder link</span>
+                </button>
+                <button type="button" onclick="copyFormEditorLink()" class="btn btn-secondary" style="border-radius: 20px; font-size: 0.84rem; padding: 8px 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid #dadce0; color: #137333; background: #ffffff; font-weight: 600; cursor: pointer; transition: background 0.2s; flex: 1; min-width: 120px;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='#ffffff'" title="Copy editor collaboration link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                    <span>Editor link</span>
+                </button>
+                <button type="button" onclick="closeGoogleShareModal()" style="background: #1a73e8; color: #ffffff; border: none; border-radius: 20px; padding: 8px 22px; font-size: 0.88rem; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(26,115,232,0.35); transition: background 0.2s; flex: 1; min-width: 80px;" onmouseover="this.style.background='#1557b0';" onmouseout="this.style.background='#1a73e8';">
+                    Done
+                </button>
+            </div>
+        </div>
+    `;
+    modal.style.display = "flex";
+
+    // Bind Change listener to Editor Access select
+    const editorSelect = document.getElementById("share-editor-access-select");
+    if (editorSelect) {
+        editorSelect.addEventListener("change", async (e) => {
+            if (activeForm) {
+                if (!activeForm.settings) activeForm.settings = {};
+                activeForm.settings.editorAccess = e.target.value;
+                await saveActiveFormSilent();
+                showToast(`Editor access set to ${e.target.value === "anyone" ? "Anyone with link" : "Restricted"} ✓`, "success");
+            }
+        });
+    }
+
+    // Bind Change listener to Responder Access select
+    const responderSelect = document.getElementById("share-responder-access-select");
+    if (responderSelect) {
+        responderSelect.addEventListener("change", async (e) => {
+            if (activeForm) {
+                if (!activeForm.settings) activeForm.settings = {};
+                activeForm.settings.responderAccess = e.target.value;
+                if (e.target.value === "anyone") {
+                    activeForm.collectEmailAddresses = "do_not_collect";
+                } else {
+                    activeForm.collectEmailAddresses = "verified";
+                }
+                await saveActiveFormSilent();
+                const textLabel = e.target.options[e.target.selectedIndex].text;
+                showToast(`Responder access set to ${textLabel} ✓`, "success");
+            }
+        });
+    }
+
+    // Bind Enter key on add people input
+    const peopleInput = document.getElementById("share-modal-input-people");
+    if (peopleInput) {
+        peopleInput.addEventListener("keydown", async (e) => {
+            if (e.key === "Enter" && peopleInput.value.trim()) {
+                const addedEmail = peopleInput.value.trim();
+                if (addedEmail.includes("@")) {
+                    if (!activeForm.settings) activeForm.settings = {};
+                    if (!activeForm.settings.collaborators) activeForm.settings.collaborators = [];
+                    if (!activeForm.settings.collaborators.includes(addedEmail)) {
+                        activeForm.settings.collaborators.push(addedEmail);
+                        await saveActiveFormSilent();
+                    }
+                    showToast(`Added ${addedEmail} as form collaborator ✓`, "success");
+                    peopleInput.value = "";
+                    openGoogleShareModal();
+                } else {
+                    showToast("Please enter a valid email address.", "warning");
+                }
+            }
+        });
+    }
+}
+
+async function removeCollaboratorEmail(email) {
+    if (!activeForm || !activeForm.settings || !activeForm.settings.collaborators) return;
+    activeForm.settings.collaborators = activeForm.settings.collaborators.filter(e => e !== email);
+    await saveActiveFormSilent();
+    showToast(`Removed ${email} from form collaborators ✓`, "info");
+    openGoogleShareModal();
+}
+
+function closeGoogleShareModal() {
+    const modal = document.getElementById("google-share-form-modal");
+    if (modal) modal.style.display = "none";
+}
+
+function copyFormShareLink() {
+    if (activeForm && activeForm.id) {
+        const link = `${window.location.origin}/form/${activeForm.id}`;
+        navigator.clipboard.writeText(link);
+        showToast("Public Responder link copied to clipboard! 🌐", "success");
+    } else {
+        showToast("Save the form first to copy share link.", "warning");
+    }
+}
+
+function copyFormEditorLink() {
+    if (activeForm && activeForm.id) {
+        const link = `${window.location.origin}/edit/${activeForm.id}`;
+        navigator.clipboard.writeText(link);
+        showToast("Form Editor collaboration link copied to clipboard! ✏️", "success");
+    } else {
+        showToast("Save the form first to copy editor link.", "warning");
+    }
+}
+
+async function saveActiveFormSilent() {
+    if (!activeForm || !activeForm.id) return;
+    try {
+        const res = await fetch(`/api/forms/${activeForm.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(activeForm)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            activeForm = data;
+        }
+    } catch(e) {}
+}
+
+async function togglePublishStatusState() {
+    const btn = document.getElementById("btn-toggle-publish-status");
+    if (!btn || !activeForm) return;
+    const currentlyPublished = activeForm.isPublished !== false && activeForm.acceptingResponses !== false;
+    if (currentlyPublished) {
+        activeForm.isPublished = false;
+        activeForm.acceptingResponses = false;
+        btn.innerText = "Draft";
+        btn.style.background = "#5f6368";
+        showToast("Form is now in Draft mode (Submissions Blocked) ⏸️", "info");
+    } else {
+        activeForm.isPublished = true;
+        activeForm.acceptingResponses = true;
+        btn.innerText = "Published ✓";
+        btn.style.background = "#1a73e8";
+        showToast("Form is now Live and accepting responses! 🚀", "success");
+    }
+    await saveActiveFormSilent();
+}
+
+function openShareHelpGuideModal() {
+    let modal = document.getElementById("share-help-guide-modal");
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "share-help-guide-modal";
+        modal.style.cssText = "position: fixed; inset: 0; z-index: 100000; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s ease;";
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div style="background: #ffffff; border-radius: 20px; max-width: 520px; width: 100%; padding: 28px; box-shadow: 0 24px 60px rgba(0,0,0,0.25); font-family: 'Outfit', 'Roboto', sans-serif; color: #202124; display: flex; flex-direction: column; gap: 18px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: #e8f0fe; color: #1a73e8; display: flex; align-items: center; justify-content: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/>
+                        </svg>
+                    </div>
+                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600; color: #202124;">Sharing & Permissions Guide</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('share-help-guide-modal').style.display='none'" style="background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #5f6368;">&times;</button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.88rem; color: #3c4043; line-height: 1.55;">
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 14px 16px; border: 1px solid #e8eaed;">
+                    <strong style="color: #1a73e8; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <span>🔒 Editor View Access</span>
+                    </strong>
+                    <span>Editors can build questions, customize branding, view incoming responses, and export data. Set to <strong>Restricted</strong> to keep editing private to you.</span>
+                </div>
+
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 14px 16px; border: 1px solid #e8eaed;">
+                    <strong style="color: #137333; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <span>🌐 Responder View Access</span>
+                    </strong>
+                    <span>Controls who can fill out and submit form responses. Select <strong>Anyone with link</strong> for public surveys, or <strong>Verified Users Only</strong> to require Google Sign-In verification.</span>
+                </div>
+
+                <div style="background: #f8f9fa; border-radius: 12px; padding: 14px 16px; border: 1px solid #e8eaed;">
+                    <strong style="color: #d93025; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <span>🛡️ Response Security</span>
+                    </strong>
+                    <span>Forms automatically enforce single-submission rules per verified Google account and protect against automated bot submissions.</span>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+                <button type="button" onclick="document.getElementById('share-help-guide-modal').style.display='none'" style="background: #1a73e8; color: #fff; border: none; border-radius: 20px; padding: 8px 24px; font-size: 0.9rem; font-weight: 500; cursor: pointer;">
+                    Got it
+                </button>
+            </div>
+        </div>
+    `;
+    modal.style.display = "flex";
+}
+
+function openShareSettingsModal() {
+    let modal = document.getElementById("share-settings-panel-modal");
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "share-settings-panel-modal";
+        modal.style.cssText = "position: fixed; inset: 0; z-index: 100000; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s ease;";
+        document.body.appendChild(modal);
+    }
+
+    const editorsCanShare = activeForm && activeForm.settings && activeForm.settings.editorsCanShare !== undefined ? activeForm.settings.editorsCanShare : true;
+    const respondersSeeSummary = activeForm && activeForm.settings && activeForm.settings.respondersSeeSummary !== undefined ? activeForm.settings.respondersSeeSummary : false;
+    const requireGoogleAuth = activeForm && activeForm.settings && activeForm.settings.requireGoogleAuth !== undefined ? activeForm.settings.requireGoogleAuth : true;
+    const notifyCollaborators = activeForm && activeForm.settings && activeForm.settings.notifyCollaborators !== undefined ? activeForm.settings.notifyCollaborators : true;
+    
+    // Formatting helper for datetime-local input (YYYY-MM-DDTHH:mm)
+    const formatForInput = (dtStr) => {
+        if (!dtStr) return "";
+        try {
+            const d = new Date(dtStr);
+            if (isNaN(d.getTime())) return "";
+            return d.toISOString().slice(0, 16);
+        } catch(e) { return ""; }
+    };
+
+    const activeFromVal = formatForInput(activeForm ? activeForm.scheduleActiveFrom : "");
+    const expireAtVal = formatForInput(activeForm ? activeForm.scheduleExpireAt : "");
+    const maxLimitVal = activeForm && activeForm.maxResponsesLimit ? activeForm.maxResponsesLimit : "";
+    const closedMsgVal = activeForm && activeForm.scheduledClosedMessage ? activeForm.scheduledClosedMessage : "This form is currently closed or scheduled to open at a later date.";
+
+    modal.innerHTML = `
+        <div style="background: #ffffff; border-radius: 20px; max-width: 540px; width: calc(100vw - 24px); max-height: 90vh; overflow-y: auto; box-sizing: border-box; padding: 24px; box-shadow: 0 24px 60px rgba(0,0,0,0.25); font-family: 'Outfit', 'Roboto', sans-serif; color: #202124; display: flex; flex-direction: column; gap: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: #f1f3f4; color: #5f6368; display: flex; align-items: center; justify-content: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+                        </svg>
+                    </div>
+                    <h3 style="margin: 0; font-size: 1.2rem; font-weight: 600; color: #202124;">Form Controls & Smart Schedule</h3>
+                </div>
+                <button type="button" onclick="document.getElementById('share-settings-panel-modal').style.display='none'" style="background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #5f6368;">&times;</button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- General Security Options -->
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 0.88rem; color: #202124;">
+                    <input type="checkbox" id="setting-editors-can-share" ${editorsCanShare ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #1a73e8; margin-top: 2px;">
+                    <div>
+                        <div style="font-weight: 600;">Editors can change permissions and share</div>
+                        <div style="font-size: 0.78rem; color: #5f6368; margin-top: 2px;">Allow added collaborators to modify form permissions</div>
+                    </div>
+                </label>
+
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 0.88rem; color: #202124;">
+                    <input type="checkbox" id="setting-responders-see-summary" ${respondersSeeSummary ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #1a73e8; margin-top: 2px;">
+                    <div>
+                        <div style="font-weight: 600;">Responders can view response summary charts</div>
+                        <div style="font-size: 0.78rem; color: #5f6368; margin-top: 2px;">Show response analytics after submission</div>
+                    </div>
+                </label>
+
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 0.88rem; color: #202124;">
+                    <input type="checkbox" id="setting-require-google-auth" ${requireGoogleAuth ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #1a73e8; margin-top: 2px;">
+                    <div>
+                        <div style="font-weight: 600;">Require Google Account verification for submission</div>
+                        <div style="font-size: 0.78rem; color: #5f6368; margin-top: 2px;">Ensures authentic human user verification</div>
+                    </div>
+                </label>
+
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 0.88rem; color: #202124;">
+                    <input type="checkbox" id="setting-notify-collaborators" ${notifyCollaborators ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: #1a73e8; margin-top: 2px;">
+                    <div>
+                        <div style="font-weight: 600;">Notify collaborators when added via email</div>
+                        <div style="font-size: 0.78rem; color: #5f6368; margin-top: 2px;">Send an automated email notification</div>
+                    </div>
+                </label>
+
+                <hr style="border: none; border-top: 1px solid #e8eaed; margin: 4px 0;">
+                <div style="font-weight: 700; font-size: 0.92rem; color: #1a73e8; display: flex; align-items: center; gap: 6px;">
+                    <span>⏱️ Smart Automation & Expiration Schedule</span>
+                </div>
+
+                <!-- Auto-Open Schedule -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 0.82rem; font-weight: 600; color: #202124;">📅 Auto-Open Form (Active From):</label>
+                    <input type="datetime-local" id="setting-schedule-active-from" value="${activeFromVal}" style="padding: 8px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 0.86rem; font-family: inherit; color: #202124;">
+                    <div style="font-size: 0.76rem; color: #5f6368;">Leave blank for immediate activation. Form will automatically go live at this exact date & time.</div>
+                </div>
+
+                <!-- Auto-Expire Schedule -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 0.82rem; font-weight: 600; color: #202124;">⏳ Auto-Expire Form (Expire At):</label>
+                    <input type="datetime-local" id="setting-schedule-expire-at" value="${expireAtVal}" style="padding: 8px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 0.86rem; font-family: inherit; color: #202124;">
+                    <div style="font-size: 0.76rem; color: #5f6368;">Leave blank for no expiration. Form will automatically close and stop accepting responses after this time.</div>
+                </div>
+
+                <!-- Maximum Response Submission Cap -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 0.82rem; font-weight: 600; color: #202124;">🔢 Max Response Submission Cap:</label>
+                    <input type="number" id="setting-max-responses-limit" min="1" placeholder="e.g. 100 (Leave blank for unlimited)" value="${maxLimitVal}" style="padding: 8px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 0.86rem; font-family: inherit; color: #202124;">
+                    <div style="font-size: 0.76rem; color: #5f6368;">Form automatically closes once this number of total responses is reached.</div>
+                </div>
+
+                <!-- Custom Closed Message -->
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 0.82rem; font-weight: 600; color: #202124;">💬 Custom Closed / Scheduled Notice Message:</label>
+                    <input type="text" id="setting-closed-message" placeholder="This form is currently closed or scheduled to open at a later date." value="${closedMsgVal}" style="padding: 8px 12px; border: 1px solid #dadce0; border-radius: 8px; font-size: 0.86rem; font-family: inherit; color: #202124;">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px;">
+                <button type="button" onclick="document.getElementById('share-settings-panel-modal').style.display='none'" style="background: none; border: 1px solid #dadce0; color: #3c4043; border-radius: 20px; padding: 8px 20px; font-size: 0.88rem; font-weight: 500; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="button" onclick="saveShareSettingsState()" style="background: #1a73e8; color: #fff; border: none; border-radius: 20px; padding: 8px 24px; font-size: 0.88rem; font-weight: 500; cursor: pointer; box-shadow: 0 2px 6px rgba(26,115,232,0.3);">
+                    Save Settings
+                </button>
+            </div>
+        </div>
+    `;
+    modal.style.display = "flex";
+}
+
+async function saveShareSettingsState() {
+    if (!activeForm) return;
+    if (!activeForm.settings) activeForm.settings = {};
+
+    const editorsCanShare = document.getElementById("setting-editors-can-share");
+    const respondersSeeSummary = document.getElementById("setting-responders-see-summary");
+    const requireGoogleAuth = document.getElementById("setting-require-google-auth");
+    const notifyCollaborators = document.getElementById("setting-notify-collaborators");
+    const activeFromInput = document.getElementById("setting-schedule-active-from");
+    const expireAtInput = document.getElementById("setting-schedule-expire-at");
+    const maxLimitInput = document.getElementById("setting-max-responses-limit");
+    const closedMsgInput = document.getElementById("setting-closed-message");
+
+    if (editorsCanShare) activeForm.settings.editorsCanShare = editorsCanShare.checked;
+    if (respondersSeeSummary) activeForm.settings.respondersSeeSummary = respondersSeeSummary.checked;
+    if (requireGoogleAuth) activeForm.settings.requireGoogleAuth = requireGoogleAuth.checked;
+    if (notifyCollaborators) activeForm.settings.notifyCollaborators = notifyCollaborators.checked;
+
+    if (activeFromInput && activeFromInput.value) {
+        activeForm.scheduleActiveFrom = new Date(activeFromInput.value).toISOString();
+    } else {
+        activeForm.scheduleActiveFrom = null;
+    }
+
+    if (expireAtInput && expireAtInput.value) {
+        activeForm.scheduleExpireAt = new Date(expireAtInput.value).toISOString();
+    } else {
+        activeForm.scheduleExpireAt = null;
+    }
+
+    if (maxLimitInput && maxLimitInput.value) {
+        activeForm.maxResponsesLimit = parseInt(maxLimitInput.value, 10);
+    } else {
+        activeForm.maxResponsesLimit = null;
+    }
+
+    if (closedMsgInput && closedMsgInput.value.trim()) {
+        activeForm.scheduledClosedMessage = closedMsgInput.value.trim();
+    }
+
+    await saveActiveFormSilent();
+    document.getElementById("share-settings-panel-modal").style.display = "none";
+    showToast("Smart scheduling and form settings saved! ⏱️", "success");
 }

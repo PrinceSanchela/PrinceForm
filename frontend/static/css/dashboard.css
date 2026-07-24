@@ -2735,8 +2735,47 @@ body.builder-mode-active .app-header-search {
     }
     .question-edit-card {
         padding: 10px !important;
-    }
 }
+
+/* Toggle Switch Styling */
+.q-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 20px;
+}
+.q-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.q-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #cbd5e1;
+    transition: .25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 20px;
+}
+.q-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.q-toggle-switch input:checked + .q-toggle-slider {
+    background-color: var(--primary-color, #673ab7);
+}
+.q-toggle-switch input:checked + .q-toggle-slider:before {
+    transform: translateX(18px);
+}
+
 
 
 
