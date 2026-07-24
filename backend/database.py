@@ -12,7 +12,13 @@ class DatabaseHelper:
     async def connect_db(self):
         """Establish asynchronous connection to MongoDB and ensure indexes."""
         try:
-            self.client = AsyncIOMotorClient(settings.MONGODB_URL)
+            self.client = AsyncIOMotorClient(
+                settings.MONGODB_URL,
+                maxPoolSize=50,
+                minPoolSize=10,
+                serverSelectionTimeoutMS=5000,
+                connectTimeoutMS=5000
+            )
             self.db = self.client[settings.DATABASE_NAME]
             
             # Ping database to verify connection

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime, timezone
 import uuid
@@ -30,7 +30,7 @@ class ValidationRuleModel(BaseModel):
 
 class QuestionModel(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:8])
-    type: str  # text, paragraph, number, radio, checkbox, select, date
+    type: str  # text, paragraph, number, radio, checkbox, select, date, header, file, rating
     label: str
     required: bool = False
     placeholder: Optional[str] = ""
@@ -42,6 +42,15 @@ class QuestionModel(BaseModel):
     validations: List[ValidationRuleModel] = []
     page: int = 1
     order: int = 0
+    # Advanced File Upload
+    allowedFileTypesOnly: Optional[bool] = False
+    allowedFileTypes: List[str] = []
+    maxFiles: int = 1
+    maxFileSize: str = "10MB"
+    # Rating Field
+    ratingScale: int = 5
+    ratingIcon: str = "star"
+
 
 class UserModel(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
@@ -61,6 +70,8 @@ class ResetCodeModel(BaseModel):
     used: bool = False
 
 class FormModel(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    
     id: str = Field(default_factory=generate_short_id)
     userId: Optional[str] = None
     title: str = "Untitled Form"
@@ -68,6 +79,7 @@ class FormModel(BaseModel):
     branding: BrandingConfig = Field(default_factory=BrandingConfig)
     questions: List[QuestionModel] = []
     acceptingResponses: bool = True
+    isPublished: bool = True
     confirmationMessage: str = "Your response has been recorded."
     showSubmitAnother: bool = True
     customRedirectUrl: Optional[str] = ""
@@ -78,6 +90,17 @@ class FormModel(BaseModel):
     successButtons: List[Dict[str, str]] = []
     successSteps: List[str] = []
     showSocialShare: bool = False
+    # Responses Collection & Protection Settings (Google Forms Standard)
+    collectEmailAddresses: str = "do_not_collect"
+    sendResponseCopy: str = "off"
+    allowResponseEditing: bool = False
+    limitToOneResponse: bool = False
+    settings: Dict[str, Any] = Field(default_factory=dict)
+    # Smart Scheduling & Response Limit Controls
+    scheduleActiveFrom: Optional[datetime] = None
+    scheduleExpireAt: Optional[datetime] = None
+    maxResponsesLimit: Optional[int] = None
+    scheduledClosedMessage: Optional[str] = "This form is currently closed or scheduled to open at a later date."
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     responseShareToken: Optional[str] = None
     isLinkedToSheets: bool = False
@@ -87,3 +110,5 @@ class ResponseModel(BaseModel):
     formId: str
     answers: Dict[str, Any]  # Key: question.id, Value: user answer (str, list, number)
     submittedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    responderEmail: Optional[str] = None
+    isVerifiedHuman: Optional[bool] = True

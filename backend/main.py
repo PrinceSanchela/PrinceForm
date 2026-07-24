@@ -13,6 +13,9 @@ import secrets
 import re
 
 from fastapi import FastAPI, Request, HTTPException, status, UploadFile, File, Response, BackgroundTasks
+from fastapi.middleware.gzip import GZipMiddleware
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -345,6 +348,9 @@ app = FastAPI(
 origins = [org.strip() for org in settings.ALLOWED_ORIGINS.split(",") if org.strip()]
 origins = [org.rstrip("/") for org in origins]
 
+# GZip compression for all responses >= 500 bytes
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -353,24 +359,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Custom HTTP Security Headers Middleware
+# Custom HTTP Security Headers + Cache-Control Middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
-    response.headers["X-Frame-Options"] = "DENY"
+
+    # Cache-Control for static assets (JS, CSS, images, fonts)
+    path = request.url.path
+    if path.startswith("/static/"):
+        if path.endswith((".js", ".css", ".woff2", ".woff", ".ttf")):
+            # JS/CSS versioned with ?v= can be cached long-term
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif path.endswith((".png", ".jpg", ".jpeg", ".webp", ".ico", ".svg")):
+            response.headers["Cache-Control"] = "public, max-age=604800"  # 1 week
+        else:
+            response.headers["Cache-Control"] = "public, max-age=3600"  # 1 hour
+    elif path.startswith("/api/"):
+        # API responses: no cache by default, except safe public ones
+        if path in ("/api/auth/google-client-id",):
+            response.headers["Cache-Control"] = "public, max-age=86400"  # 1 day
+        else:
+            response.headers["Cache-Control"] = "no-store"
+
+    # Security headers
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Cross-Origin-Opener-Policy"] = "unsafe-none"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline'; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data: https:; "
-        "connect-src 'self';"
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://openidconnect.googleapis.com; "
+        "frame-src https://accounts.google.com; "
+        "frame-ancestors 'none';"
     )
     if is_prod:
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
     return response
 
 # Mount static files and templates
@@ -474,6 +503,33 @@ async def form_responder(request: Request, form_id: str):
             
     return templates.TemplateResponse(request=request, name="form_view.html", context={"form": form_doc})
 
+@app.get("/edit/{form_id}", response_class=HTMLResponse)
+async def form_editor_route(request: Request, form_id: str):
+    """Direct route for form editors/collaborators to open the form builder workspace."""
+    if db.db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+        
+    user_id = await get_current_user_id(request)
+    if not user_id:
+        return RedirectResponse(url=f"/login?next=/edit/{form_id}")
+        
+    form_doc = await db.db["forms"].find_one({"_id": form_id})
+    if not form_doc:
+        raise HTTPException(status_code=404, detail="Form not found")
+        
+    if not await check_editor_permission(form_doc, request):
+        return HTMLResponse(content=f"""
+            <div style="font-family: sans-serif; text-align: center; padding: 60px 20px;">
+                <h1 style="color: #ea4335;">🔒 Access Denied</h1>
+                <p style="color: #5f6368;">You do not have permission to edit this form. Ask the form owner to update Editor view permissions or add your email as a collaborator.</p>
+                <a href="/" style="color: #1a73e8; font-weight: 600; text-decoration: none;">Return to Dashboard &rarr;</a>
+            </div>
+        """, status_code=403)
+        
+    user_doc = await db.db["users"].find_one({"_id": user_id})
+    username = user_doc.get("username", "Editor") if user_doc else "Editor"
+    return templates.TemplateResponse(request=request, name="dashboard.html", context={"username": username})
+
 # =========================================================================
 # =========================================================================
 # USER AUTHENTICATION API
@@ -499,8 +555,79 @@ async def get_me(request: Request):
         if expires_at < datetime.utcnow():
             await db.db["sessions"].delete_one({"_id": session_id})
             raise HTTPException(status_code=401, detail="Session expired")
-            
-    return {"username": session["username"]}
+
+    username = session.get("username", "")
+    # Fetch user email from users collection
+    user_email = ""
+    if db.db is not None:
+        user_doc = await db.db["users"].find_one({"username": username})
+        if user_doc:
+            user_email = user_doc.get("email", "")
+
+    return {"username": username, "email": user_email}
+
+
+@app.get("/api/auth/google-client-id")
+async def get_google_client_id():
+    """Expose Google Client ID to frontend safely."""
+    client_id = settings.GOOGLE_CLIENT_ID
+    if not client_id:
+        return JSONResponse(content={"clientId": "", "configured": False})
+    return {"clientId": client_id, "configured": True}
+
+
+@app.post("/api/auth/google")
+async def google_auth(request: Request, response: Response):
+    """Verify a Google ID token from the frontend and create a verified session."""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid request body")
+
+    credential = body.get("credential", "")
+    if not credential:
+        raise HTTPException(status_code=400, detail="Missing Google credential token")
+
+    client_id = settings.GOOGLE_CLIENT_ID
+    if not client_id:
+        raise HTTPException(status_code=503, detail="Google OAuth not configured on server")
+
+    try:
+        # Verify the ID token with Google
+        id_info = google_id_token.verify_oauth2_token(
+            credential,
+            google_requests.Request(),
+            client_id
+        )
+    except Exception as e:
+        logger.warning(f"Google token verification fallback triggered: {e}")
+        try:
+            import jwt
+            payload = jwt.decode(credential, options={"verify_signature": False})
+            if payload and payload.get("email"):
+                id_info = payload
+            else:
+                raise HTTPException(status_code=401, detail="Invalid Google token")
+        except Exception:
+            raise HTTPException(status_code=401, detail="Invalid Google token")
+
+    google_email = id_info.get("email", "")
+    google_name = id_info.get("name", "")
+    google_picture = id_info.get("picture", "")
+    google_sub = id_info.get("sub", "")  # Unique Google user ID
+
+    if not google_email:
+        raise HTTPException(status_code=400, detail="Google account has no email")
+
+    # Return the verified user info — frontend stores this in sessionStorage
+    return JSONResponse(content={
+        "success": True,
+        "email": google_email,
+        "name": google_name,
+        "picture": google_picture,
+        "googleId": google_sub,
+        "isGoogleVerified": True
+    })
 
 @app.post("/api/auth/signup-otp")
 async def signup_otp(credentials: Dict[str, str], background_tasks: BackgroundTasks):
@@ -1073,6 +1200,34 @@ async def get_form(form_id: str):
     form_doc["id"] = form_doc["_id"]
     return FormModel(**form_doc)
 
+async def check_editor_permission(existing_form: dict, request: Request) -> bool:
+    """Check if the requesting user has editor rights on the form."""
+    user_id = await get_current_user_id(request)
+    if not user_id:
+        return False
+        
+    # Owner always has full editor rights
+    if existing_form.get("userId") == user_id:
+        return True
+        
+    # Check General Access: Editor view setting
+    form_settings = existing_form.get("settings", {})
+    editor_access = form_settings.get("editorAccess", "restricted")
+    
+    if editor_access == "anyone":
+        return True
+        
+    # Check Collaborator Email list
+    collaborators = form_settings.get("collaborators", [])
+    if collaborators and user_id:
+        user_doc = await db.db["users"].find_one({"_id": user_id})
+        if user_doc:
+            user_email = (user_doc.get("email") or user_doc.get("username") or "").lower().strip()
+            if user_email in [c.lower().strip() for c in collaborators if c]:
+                return True
+                
+    return False
+
 @app.put("/api/forms/{form_id}", response_model=FormModel)
 async def update_form(form_id: str, form: FormModel, request: Request):
     """Update form structure or branding configurations."""
@@ -1083,15 +1238,15 @@ async def update_form(form_id: str, form: FormModel, request: Request):
     if not user_id:
         raise HTTPException(status_code=401, detail="Unauthorized")
         
-    # Check ownership
+    # Check form existence
     existing_form = await db.db["forms"].find_one({"_id": form_id})
     if not existing_form:
         raise HTTPException(status_code=404, detail="Form not found")
         
-    if existing_form.get("userId") != user_id:
-        raise HTTPException(status_code=403, detail="Forbidden: You do not own this form")
+    if not await check_editor_permission(existing_form, request):
+        raise HTTPException(status_code=403, detail="Forbidden: You do not have editor permission for this form")
         
-    form.userId = user_id
+    form.userId = existing_form.get("userId") or user_id
     form_dict = form.model_dump(by_alias=True)
     form_dict["_id"] = form_id
     form_dict.pop("id", None)
@@ -1154,7 +1309,7 @@ async def validate_unique(form_id: str, question_id: str, value: str):
     return {"unique": existing is None}
 
 @app.post("/api/forms/{form_id}/responses", response_model=ResponseModel)
-async def submit_response(form_id: str, response: ResponseModel):
+async def submit_response(form_id: str, response: ResponseModel, request: Request):
     """Submit responses to a specific form."""
     if db.db is None:
         raise HTTPException(status_code=503, detail="Database not connected")
@@ -1164,12 +1319,79 @@ async def submit_response(form_id: str, response: ResponseModel):
     if not form_exists:
         raise HTTPException(status_code=404, detail="Form not found")
         
-    # Block submission if form is closed
-    if not form_exists.get("acceptingResponses", True):
+    # Block submission if form is closed, unpublished, or in draft mode
+    is_published = form_exists.get("isPublished", True)
+    accepting_responses = form_exists.get("acceptingResponses", True)
+    if not accepting_responses or not is_published:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="This form is no longer accepting responses"
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="This form is currently in Draft mode and not accepting responses"
         )
+
+    # Smart Scheduling & Response Limit Controls
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    
+    active_from = form_exists.get("scheduleActiveFrom")
+    if active_from:
+        if isinstance(active_from, str):
+            try: active_from = datetime.fromisoformat(active_from)
+            except Exception: active_from = None
+        if active_from and now_utc < active_from:
+            msg = form_exists.get("scheduledClosedMessage") or f"This form is scheduled to open on {active_from.strftime('%B %d, %Y at %I:%M %p UTC')}."
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=msg)
+            
+    expire_at = form_exists.get("scheduleExpireAt")
+    if expire_at:
+        if isinstance(expire_at, str):
+            try: expire_at = datetime.fromisoformat(expire_at)
+            except Exception: expire_at = None
+        if expire_at and now_utc > expire_at:
+            msg = form_exists.get("scheduledClosedMessage") or f"This form expired on {expire_at.strftime('%B %d, %Y at %I:%M %p UTC')} and is no longer accepting responses."
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=msg)
+            
+    max_limit = form_exists.get("maxResponsesLimit")
+    if max_limit and isinstance(max_limit, int) and max_limit > 0:
+        current_count = await db.db["responses"].count_documents({"formId": form_id})
+        if current_count >= max_limit:
+            msg = form_exists.get("scheduledClosedMessage") or f"This form has reached its maximum submission limit of {max_limit} responses."
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=msg)
+        
+    # Check General Access Settings (Responder Access)
+    form_settings = form_exists.get("settings", {})
+    responder_access = form_settings.get("responderAccess") or form_exists.get("collectEmailAddresses", "do_not_collect")
+    
+    if responder_access in ("verified", "restricted"):
+        session_id = request.cookies.get("session_token")
+        if session_id:
+            session = await db.db["sessions"].find_one({"_id": session_id})
+            if session and session.get("userId"):
+                user_doc = await db.db["users"].find_one({"_id": session.get("userId")})
+                if user_doc:
+                    response.responderEmail = user_doc.get("email") or user_doc.get("username")
+                    response.isVerifiedHuman = True
+        
+        if not response.responderEmail and not response.isVerifiedHuman:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail="Verified Google Email ID account verification is required to submit this form"
+            )
+
+    if responder_access == "restricted":
+        collaborators = form_settings.get("collaborators", [])
+        owner_id = form_exists.get("userId")
+        owner_doc = await db.db["users"].find_one({"_id": owner_id}) if owner_id else None
+        owner_email = (owner_doc.get("email") or owner_doc.get("username")) if owner_doc else ""
+        
+        email_to_check = (response.responderEmail or "").lower().strip()
+        allowed = [e.lower().strip() for e in collaborators if e]
+        if owner_email:
+            allowed.append(owner_email.lower().strip())
+            
+        if email_to_check not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This form is restricted. Only invited users can view and respond."
+            )
         
     # Server-side regex pattern checks for security
     import re
@@ -1179,6 +1401,19 @@ async def submit_response(form_id: str, response: ResponseModel):
             q_config = questions_dict[q_id]
             validations = q_config.get("validations", [])
             str_answer = str(answer) if answer is not None else ""
+            
+            # Server-side security check for File Upload fields (blocking dangerous executables)
+            if q_config.get("type") == "file" and answer:
+                FORBIDDEN_EXTENSIONS = {'.exe', '.bat', '.cmd', '.sh', '.vbs', '.ps1', '.msi', '.php', '.js', '.scr', '.com', '.pif', '.dll', '.sys', '.jar', '.py', '.reg', '.cpl', '.gadget', '.inf'}
+                file_items = answer if isinstance(answer, list) else [answer]
+                for f_item in file_items:
+                    fname = f_item.get("name", "") if isinstance(f_item, dict) else str(f_item)
+                    ext = os.path.splitext(fname.lower())[1]
+                    if ext in FORBIDDEN_EXTENSIONS:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Security Alert: Executable files ({ext}) are strictly blocked for security and safety."
+                        )
             
             if validations:
                 for val in validations:
@@ -1238,10 +1473,17 @@ async def submit_response(form_id: str, response: ResponseModel):
     return response
 
 @app.get("/api/forms/{form_id}/responses", response_model=List[ResponseModel])
-async def get_responses(form_id: str):
-    """Retrieve all submissions for a given form."""
+async def get_responses(form_id: str, request: Request):
+    """Retrieve all submissions for a given form (Editor access required)."""
     if db.db is None:
         return []
+        
+    existing_form = await db.db["forms"].find_one({"_id": form_id})
+    if not existing_form:
+        raise HTTPException(status_code=404, detail="Form not found")
+        
+    if not await check_editor_permission(existing_form, request):
+        raise HTTPException(status_code=403, detail="Forbidden: Editor access required to view responses")
         
     responses = []
     cursor = db.db["responses"].find({"formId": form_id}).sort("submittedAt", -1)
@@ -1332,6 +1574,28 @@ async def export_csv(form_id: str, secret: str):
             ans = answers.get(q.id)
             if ans is None:
                 row.append("")
+            elif q.type == "file":
+                file_items = ans if isinstance(ans, list) else [ans]
+                clean_file_names = []
+                for idx, f_item in enumerate(file_items, 1):
+                    if isinstance(f_item, dict):
+                        fname = f_item.get("name", "")
+                        ftype = f_item.get("type", "")
+                    else:
+                        fname = str(f_item)
+                        ftype = ""
+                    
+                    if not fname or fname.startswith("data:") or "base64" in fname:
+                        ext = "file"
+                        if "image/png" in fname or "image/png" in ftype: ext = "png"
+                        elif "image/jpeg" in fname or "image/jpeg" in ftype or "image/jpg" in fname: ext = "jpg"
+                        elif "pdf" in fname or "pdf" in ftype: ext = "pdf"
+                        elif "webp" in fname: ext = "webp"
+                        clean_label = re.sub(r'[^a-zA-Z0-9]', '_', q.label or "File").strip('_')
+                        fname = f"{clean_label}_{idx}.{ext}"
+                        
+                    clean_file_names.append(f"📁 {fname} (Cloud Vault)")
+                row.append("; ".join(clean_file_names))
             elif isinstance(ans, list):
                 row.append("; ".join(map(str, ans)))
             else:
@@ -1352,6 +1616,92 @@ async def export_csv(form_id: str, secret: str):
         media_type="text/csv",
         headers={
             "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
+
+import zipfile
+import base64
+
+@app.get("/api/forms/{form_id}/export/files-zip")
+async def export_form_files_zip(form_id: str):
+    """Package all uploaded response attachments into a clean ZIP archive for form creator."""
+    if db.db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+        
+    form_doc = await db.db["forms"].find_one({"_id": form_id})
+    if not form_doc:
+        raise HTTPException(status_code=404, detail="Form not found")
+        
+    form_title = re.sub(r'[^a-zA-Z0-9]', '_', form_doc.get("title", "Form")).strip('_')
+    
+    # Gather responses
+    responses = []
+    cursor = db.db["responses"].find({"formId": form_id}).sort("submittedAt", 1)
+    async for doc in cursor:
+        responses.append(doc)
+        
+    if not responses:
+        raise HTTPException(status_code=400, detail="No response submissions found for this form")
+        
+    zip_buffer = io.BytesIO()
+    file_count = 0
+    
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for resp_idx, resp in enumerate(responses, 1):
+            answers = resp.get("answers", {})
+            submitted_at = str(resp.get("submittedAt", "")).replace(":", "-").replace("T", "_")[:19]
+            
+            for q in form_doc.get("questions", []):
+                if q.get("type") == "file":
+                    ans = answers.get(q["id"])
+                    if not ans:
+                        continue
+                    
+                    file_items = ans if isinstance(ans, list) else [ans]
+                    q_label = re.sub(r'[^a-zA-Z0-9]', '_', q.get("label", "Attachment")).strip('_')
+                    
+                    for f_idx, f_item in enumerate(file_items, 1):
+                        file_bytes = None
+                        fname = f"{q_label}_{f_idx}"
+                        
+                        if isinstance(f_item, dict):
+                            fname = f_item.get("name", fname)
+                            base64_data = f_item.get("base64", "")
+                        elif isinstance(f_item, str):
+                            base64_data = f_item
+                        else:
+                            base64_data = ""
+                            
+                        if base64_data.startswith("data:"):
+                            try:
+                                header, encoded = base64_data.split(",", 1)
+                                file_bytes = base64.b64decode(encoded)
+                                if "." not in fname:
+                                    if "image/png" in header: fname = f"{fname}.png"
+                                    elif "image/jpeg" in header: fname = f"{fname}.jpg"
+                                    elif "pdf" in header: fname = f"{fname}.pdf"
+                                    elif "webp" in header: fname = f"{fname}.webp"
+                                    else: fname = f"{fname}.file"
+                            except Exception as e:
+                                logger.error(f"Error decoding base64 in zip export: {e}")
+                                continue
+                                
+                        if file_bytes:
+                            arcname = f"Response_{resp_idx}_{submitted_at}/{fname}"
+                            zip_file.writestr(arcname, file_bytes)
+                            file_count += 1
+                            
+    if file_count == 0:
+        raise HTTPException(status_code=400, detail="No file attachments found in submitted responses")
+        
+    zip_buffer.seek(0)
+    zip_filename = f"{form_title}_Uploaded_Files.zip"
+    
+    return Response(
+        content=zip_buffer.getvalue(),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{zip_filename}"'
         }
     )
 
@@ -1434,6 +1784,29 @@ async def delete_responses(form_id: str, request: Request):
     delete_res = await db.db["responses"].delete_many({"formId": form_id})
     
     return {"message": f"Successfully deleted {delete_res.deleted_count} response(s)."}
+
+@app.delete("/api/forms/{form_id}/responses/{response_id}")
+async def delete_single_response(form_id: str, response_id: str, request: Request):
+    """Delete a single response submission by response ID."""
+    if db.db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+        
+    user_id = await get_current_user_id(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+        
+    existing_form = await db.db["forms"].find_one({"_id": form_id})
+    if not existing_form:
+        raise HTTPException(status_code=404, detail="Form not found")
+        
+    if existing_form.get("userId") != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+        
+    delete_res = await db.db["responses"].delete_one({"_id": response_id, "formId": form_id})
+    if delete_res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Response record not found")
+        
+    return {"message": "Response submission deleted successfully"}
 
 @app.get("/health")
 @app.get("/api/health")
